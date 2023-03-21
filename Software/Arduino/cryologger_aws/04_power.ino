@@ -16,7 +16,7 @@ void readBattery()
   //voltage = voltage * 3.3 * 2 / 4096.0;
 
   // Write data to union
-  moSbdMessage.voltage = voltage * 100;
+  LoRaMessage.voltage = voltage * 100;
 
   // Add to statistics object
   batteryStats.add(voltage);
@@ -34,6 +34,7 @@ void readBattery()
 void disableSerial()
 {
 #if DEBUG
+  SERIAL_PORT.flush();  //Yh 031923: let's flush out remaining bits from serial buffer
   SERIAL_PORT.end(); // Close serial port
   USBDevice.detach(); // Safely detach USB prior to sleeping
 #endif
@@ -46,7 +47,7 @@ void enableSerial()
   USBDevice.attach(); // Re-attach USB
   SERIAL_PORT.begin(115200);
   blinkLed(PIN_LED_RED, 4, 250); // Blink LED
-  //myDelay(3000); // Non-blocking delay to allow user to open Serial Monitor
+  myDelay(3000); // Non-blocking delay to allow user to open Serial Monitor
 #endif
 }
 
@@ -92,6 +93,8 @@ void disable12V()
 // Prepare system for sleep
 void prepareForSleep()
 {
+
+
   // Disable serial
   disableSerial();
 
@@ -122,6 +125,9 @@ void wakeUp()
 {
   // Enable serial port
   enableSerial();
+
+  //Yh 031923 - wait for Serial to be back:
+  myDelay(5000);
 }
 
 // Non-blocking blink LED (https://forum.arduino.cc/index.php?topic=503368.0)

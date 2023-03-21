@@ -2,13 +2,13 @@
 void calculateStats()
 {
   // Write data to union
-  moSbdMessage.temperatureInt = temperatureIntStats.average()   * 100;          // Mean internal temperature (°C)
-  moSbdMessage.humidityInt    = humidityIntStats.average()      * 100;          // Mean internal humidity (%)
-  moSbdMessage.pressureInt    = (pressureIntStats.average()     - 850) * 100;   // Mean internal pressure (hPa)
-  moSbdMessage.temperatureExt = temperatureExtStats.average()   * 100;          // Mean external temperature (°C)
-  moSbdMessage.humidityExt    = humidityExtStats.average()      * 100;          // Mean external humidity (%)
-  //moSbdMessage.solar          = solarStats.average()            * 10;           // Mean solar irradiance (W m-2)
-  moSbdMessage.voltage        = batteryStats.average()          * 100;          // Mean battery voltage (V)
+  LoRaMessage.temperatureInt = temperatureIntStats.average()   * 100;          // Mean internal temperature (°C)
+  LoRaMessage.humidityInt    = humidityIntStats.average()      * 100;          // Mean internal humidity (%)
+  LoRaMessage.pressureInt    = (pressureIntStats.average()     - 850) * 100;   // Mean internal pressure (hPa)
+  LoRaMessage.temperatureExt = temperatureExtStats.average()   * 100;          // Mean external temperature (°C)
+  LoRaMessage.humidityExt    = humidityExtStats.average()      * 100;          // Mean external humidity (%)
+  //LoRaMessage.solar          = solarStats.average()            * 10;           // Mean solar irradiance (W m-2)
+  LoRaMessage.voltage        = batteryStats.average()          * 100;          // Mean battery voltage (V)
 
   // Calculate mean wind speed and direction vectors
   windVectors();

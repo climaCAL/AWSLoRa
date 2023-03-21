@@ -1,3 +1,4 @@
+/* Yh-031823-
 // Configure RockBLOCK 9603
 void configureIridium()
 {
@@ -11,10 +12,10 @@ void writeBuffer()
 {
   iterationCounter++; // Increment iteration counter
   transmitCounter++; // Increment data transmission counter
-  moSbdMessage.iterationCounter = iterationCounter; // Write message counter data to union
+  LoRaMessage.iterationCounter = iterationCounter; // Write message counter data to union
 
   // Concatenate current message with existing message(s) stored in transmit buffer
-  memcpy(moSbdBuffer + (sizeof(moSbdMessage) * (transmitCounter + (retransmitCounter * transmitInterval) - 1)), moSbdMessage.bytes, sizeof(moSbdMessage));
+  memcpy(moSbdBuffer + (sizeof(LoRaMessage) * (transmitCounter + (retransmitCounter * transmitInterval) - 1)), LoRaMessage.bytes, sizeof(LoRaMessage));
 
   // Print MO-SBD union/structure
   printMoSbd();
@@ -22,7 +23,7 @@ void writeBuffer()
   //printMoSbdBuffer();
 
   // Clear MO-SBD message union/structure
-  memset(&moSbdMessage, 0x00, sizeof(moSbdMessage));
+  memset(&LoRaMessage, 0x00, sizeof(LoRaMessage));
 }
 
 // Attempt to transmit data via RockBLOCK 9603
@@ -60,7 +61,7 @@ void transmitData()
     else
     {
       // Calculate SBD message buffer sizes
-      moSbdBufferSize = sizeof(moSbdMessage) * (transmitCounter + (retransmitCounter * transmitInterval));
+      moSbdBufferSize = sizeof(LoRaMessage) * (transmitCounter + (retransmitCounter * transmitInterval));
       mtSbdBufferSize = sizeof(mtSbdBuffer);
       memset(mtSbdBuffer, 0x00, sizeof(mtSbdBuffer)); // Clear MT-SBD buffer
 
@@ -140,7 +141,7 @@ void transmitData()
     // Store return error code
     transmitStatus = returnCode;
     Serial.print("transmitStatus: "); Serial.println(transmitStatus);
-    moSbdMessage.transmitStatus = transmitStatus;
+    LoRaMessage.transmitStatus = transmitStatus;
 
     // Store message in transmit buffer if transmission or modem begin fails
     if (returnCode != ISBD_SUCCESS)
@@ -184,7 +185,7 @@ void transmitData()
     timer.iridium = millis() - loopStartTime;
 
     // Write duration of last transmission to union
-    moSbdMessage.transmitDuration = timer.iridium / 1000;
+    LoRaMessage.transmitDuration = timer.iridium / 1000;
 
     printSettings(); // Print current settings
 
@@ -226,3 +227,5 @@ void ISBDDiagsCallback(IridiumSBD * device, char c)
   DEBUG_WRITE(c);
 #endif
 }
+
+*/  //Yh-031823-

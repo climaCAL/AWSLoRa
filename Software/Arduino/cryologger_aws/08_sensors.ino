@@ -6,6 +6,10 @@ void configureBme280()
 {
   DEBUG_PRINT("Info - Initializing BME280...");
 
+  // Yh 031823 - May I suggest to "ping" expected/defaut device I2C address first in order to test presence? Then try begin.
+  
+  // Ok, on 031923 - Stuck here, at the "begin"...!!!  hangging ... until WDT force restart
+
   if (bme280.begin())
   {
     online.bme280 = true;
@@ -104,6 +108,7 @@ void configureLsm303()
 {
   DEBUG_PRINT("Info - Initializing LSM303...");
 
+   // Yh 031823 - May I suggest to "ping" expected/defaut device I2C address first in order to test presence? Then try begin.
 
   // Initialize LSM303 accelerometer
   if (lsm303.begin())
@@ -159,8 +164,8 @@ void readLsm303()
     roll = atan2(yAvg, xAvg) * 180 / PI;
 
     // Write data to union
-    moSbdMessage.pitch = pitch * 100;
-    moSbdMessage.roll = roll * 100;
+    LoRaMessage.pitch = pitch * 100;
+    LoRaMessage.roll = roll * 100;
 
     // Add to statistics object
     //pitchStats.add();
@@ -330,8 +335,8 @@ void read5103L()
   float v = -1.0 * windSpeed * cos(windDirectionRadians);   // Magnitude of north-south component (v) of vector winds
 
   // Write data to union
-  moSbdMessage.windGustSpeed = windGustSpeed * 100;
-  moSbdMessage.windGustDirection = windGustDirection * 10;
+  LoRaMessage.windGustSpeed = windGustSpeed * 100;
+  LoRaMessage.windGustDirection = windGustDirection * 10;
 
   // Add to wind statistics
   windSpeedStats.add(windSpeed);
@@ -420,8 +425,8 @@ void read7911()
   float v = -1.0 * windSpeed * cos(windDirectionRadians);   // Magnitude of north-south component (v) of vector winds
 
   // Write data to union
-  moSbdMessage.windGustSpeed = windGustSpeed * 100;
-  moSbdMessage.windGustDirection = windGustDirection * 10;
+  LoRaMessage.windGustSpeed = windGustSpeed * 100;
+  LoRaMessage.windGustDirection = windGustDirection * 10;
 
   // Add to wind statistics
   windSpeedStats.add(windSpeed);
@@ -471,8 +476,8 @@ void windVectors()
     rvWindDirection = 0;
 
   // Write data to union
-  moSbdMessage.windSpeed = rvWindSpeed * 100;         // Resultant mean wind speed (m/s)
-  moSbdMessage.windDirection = rvWindDirection * 10;  // Resultant mean wind direction (°)
+  LoRaMessage.windSpeed = rvWindSpeed * 100;         // Resultant mean wind speed (m/s)
+  LoRaMessage.windDirection = rvWindDirection * 10;  // Resultant mean wind direction (°)
 }
 
 // ----------------------------------------------------------------------------
