@@ -99,21 +99,23 @@
 #define PIN_MICROSD_CS      9   //Was:4 on adaloger
 #define PIN_12V_EN          5   // 12 V step-up/down regulator
 #define PIN_5V_EN           6   // 5V step-down regulator
-#define PIN_LED_GREEN       8   // Green LED
-#define PIN_IRIDIUM_RX      10  // Pin 1 RXD (Yellow)
-#define PIN_IRIDIUM_TX      11  // Pin 6 TXD (Orange)
-#define PIN_IRIDIUM_SLEEP   12  // Pin 7 OnOff (Grey)
+#define PIN_LED_GREEN       10 //Was:8   // Green LED
+//#define PIN_IRIDIUM_RX      10  // Pin 1 RXD (Yellow)
+//#define PIN_IRIDIUM_TX      11  // Pin 6 TXD (Orange)
+//#define PIN_IRIDIUM_SLEEP   12  // Pin 7 OnOff (Grey)
 #define PIN_LED_RED         13
 
 // Unused
-#define PIN_SOLAR           7
-#define PIN_SENSOR_PWR      7
+#define PIN_SOLAR           14
+#define PIN_SENSOR_PWR      14
 
 //RFM95 - LoRa module
-#define PIN_RFM95_CS        10  //marked as D10, PA18
-#define PIN_RFM95_RST       11  //marked as D11, PA16
-#define PIN_RFM95_INT       12  //marked as D12, PA19
-#define PIN_RFM95_DIO0      12  //Same as INT
+//PMOD-RFM95: CS=10, RST=11, INT/DIO0=12
+//AdaRFM95: CS=8, RST=4, INt/DIO0=7
+#define PIN_RFM95_CS        8 //marked as D10, PA18
+#define PIN_RFM95_RST       4  //marked as D11, PA16
+#define PIN_RFM95_INT       7  //marked as D12, PA19
+#define PIN_RFM95_DIO0      7  //Same as INT
 // Remaining pins are std to M0: MOSI(23), MISO(22), CLK(24)
 
 // ----------------------------------------------------------------------------
