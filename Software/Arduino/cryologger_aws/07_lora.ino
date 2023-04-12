@@ -23,7 +23,7 @@ void configureLoRa()
   //Debug msg 4
 }
 
-
+//Yh Kept for compatibility reasons but not required with LoRa...
 void writeBuffer()
 {
   iterationCounter++; // Increment iteration counter
@@ -78,6 +78,8 @@ void LoRaTransmitData()
 
 }
 
+// Yh: unfortunately, this does not work for SAMD21 uC, according to Arduino LoRa
+//   but I don't know why and I would like to test it (change lib)
 void LoRaSendCallback()
 {
   //DEBUG_PRINTLN("LoRa callBack");  //Attention! Risqué!
@@ -86,6 +88,6 @@ void LoRaSendCallback()
     LoRaTimeOnAir = ToAStop - ToAStart;
   else LoRaTimeOnAir=0;
   // Write duration of last transmission to union
-  LoRaMessage.transmitDuration = LoRaTimeOnAir;
+  LoRaMessage.transmitDuration = (LoRaTimeOnAir/1000UL);
   LoRaTransmitCompleted = true;
 }
