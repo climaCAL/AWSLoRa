@@ -6,11 +6,13 @@
 
     Description:
     - Code configured for automatic weather stations to be deployed in Igloolik, Nunavut.
+    - Code modified and adapted by Yh for LoRa data transmission at CEGEP André-Laurendeau, AWS project
 
     Components:
-    - Rock7 RockBLOCK 9603
-    - Maxtena M1621HCT-P-SMA antenna (optional)
+    - (Yh removed) Rock7 RockBLOCK 9603
+    - (Yh removed) Maxtena M1621HCT-P-SMA antenna (optional)
     - Adafruit Feather M0 Adalogger
+    - (Yh new) RFM95 - Lora Module OR Adafruit M0 LoRa
     - Adafruit Ultimate GPS Featherwing
     - Adafruit BME280 Temperature Humidity Pressure Sensor
     - Adafruit LSM303AGR Accelerometer/Magnetomter
@@ -18,7 +20,6 @@
     - Pololu 5V 600mA Step-Down Voltage Regulator D36V6F5
     - Pololu 12V 600mA Step-Down Voltage Regulator D36V6F5
     - SanDisk Industrial XI 8 GB microSD card
-    - RFM95 - Lora Module
 
     Sensors:
     - RM Young 05103L Wind Monitor
@@ -333,8 +334,8 @@ struct struct_timer
   unsigned long read5103L;
   unsigned long read7911;
   unsigned long readSp212;
-  unsigned long iridium;  //Yh-031823-
-  unsigned long lora;
+  unsigned long iridium;  //Yh-031823-not req
+  unsigned long lora;  //Yh-031823-new
 } timer;
 
 // ----------------------------------------------------------------------------
@@ -514,10 +515,11 @@ void loop()
 //Yh-031823-          transmitData(); // Transmit data via Iridium transceiver
           LoRaTransmitData();
 
-          //Wait for LoRa transmit to complete (max 5 sec):
+          //Wait for LoRa transmit to complete (max 1.5 sec):
           //Note: Arduino-LoRa lib warns that onReceive and on onTxDone won't work on SAMD !!! Sh**!!
+          //According to https://iftnt.github.io/lora-air-time/index.html estimated air time is 575ms
           uint32_t loRaTimer = millis();
-          const uint32_t loRaDelay = 2000; //Was: 5000
+          const uint32_t loRaDelay = 1500;
           while (!LoRaTransmitCompleted && ((millis() - loRaTimer)<loRaDelay))
             myDelay(100);
 
