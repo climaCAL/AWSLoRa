@@ -123,8 +123,8 @@
 // RFM95W radio definitions
 // ----------------------------------------------------------------------------
 #define RF95_FREQ     902700000UL   // Radio frequency (MHz)
-#define RF95_PW       8      // Transmit power (dBm)
-#define RF95_SF       7       // Spreading factor
+#define RF95_PW       14      // Transmit power (dBm)
+#define RF95_SF       10       // Spreading factor
 #define RF95_BW       125000UL  // Bandwidth (MHz)
 #define RF95_CR       5       // Coding rate
 #define RF95_CRC      true    // Cyclic Redundancy Check (CRC)
@@ -253,7 +253,7 @@ tmElements_t  tm;                         // Variable for converting time elemen
 // Yh 031823 - replaced moSbdMessage for LoRaMessage
 
 const byte localAddress = 0x10;     // address of this device - saut de 16 p/r a SMG-CAL-01
-const byte destination = 0xFD;      // destination to send to
+const byte destination = 0xFC;      // destination to send to
 const byte currentSupportedFrameVersion = 0x03;  //AWS cryologger
 
 typedef union
@@ -517,7 +517,7 @@ void loop()
 
           //Wait for LoRa transmit to complete (max 1.5 sec):
           //Note: Arduino-LoRa lib warns that onReceive and on onTxDone won't work on SAMD !!! Sh**!!
-          //According to https://iftnt.github.io/lora-air-time/index.html estimated air time is 575ms
+          //According to https://iftnt.github.io/lora-air-time/index.html estimated air time is 534ms
           uint32_t loRaTimer = millis();
           const uint32_t loRaDelay = 1500;
           while (!LoRaTransmitCompleted && ((millis() - loRaTimer)<loRaDelay))
