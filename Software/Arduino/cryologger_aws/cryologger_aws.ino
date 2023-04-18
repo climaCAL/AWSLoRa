@@ -252,8 +252,8 @@ tmElements_t  tm;                         // Variable for converting time elemen
 // Union to store Iridium Short Burst Data (SBD) Mobile Originated (MO) messages
 // Yh 031823 - replaced moSbdMessage for LoRaMessage
 
-const byte localAddress = 0x10;     // address of this device - saut de 16 p/r a SMG-CAL-01
-const byte destination = 0xFC;      // destination to send to
+const byte localAddress = 0x01;     // address of this device
+const byte destination = 0xF1;      // destination to send to (gateway, repeater)
 const byte currentSupportedFrameVersion = 0x03;  //AWS cryologger
 
 typedef union
