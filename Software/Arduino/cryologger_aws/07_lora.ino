@@ -60,10 +60,10 @@ void LoRaTransmitData()
   ToAStart = micros();  //Pour mesurer approx le temps de transmission
   LoRa.beginPacket();
   LoRa.write(LoRaMessage.bytes, sizeof(LoRaMessage));  //Clef pour la transmission "binaire"
-  LoRa.endPacket();
+  LoRa.endPacket(true);
 
   retransmitCounter = 0; // Clear message retransmit counter
-  transmitCounter = 0;
+  transmitCounter = 1;
   iterationCounter++; // Increment iteration counter
 
   // Put modem to sleep
@@ -73,7 +73,6 @@ void LoRaTransmitData()
   // Stop the loop timer
   timer.lora = millis() - loopStartTime;
 
-  transmitCounter++;  //One down, many more to go...
   LoRaTransmitCompleted = false;
 
 }

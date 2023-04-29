@@ -123,7 +123,7 @@
 // RFM95W radio definitions
 // ----------------------------------------------------------------------------
 #define RF95_FREQ     902700000UL   // Radio frequency (MHz)
-#define RF95_PW       14      // Transmit power (dBm)
+#define RF95_PW       20      // Transmit power (dBm)
 #define RF95_SF       10       // Spreading factor
 #define RF95_BW       125000UL  // Bandwidth (MHz)
 #define RF95_CR       5       // Coding rate
@@ -186,7 +186,7 @@ Statistic vStats;               // Wind north-south wind vector component (v)
 unsigned long sampleInterval    = 1;  //Yh was:5   // Sampling interval (minutes). Default: 5 min (300 seconds)
 unsigned int  averageInterval   = 1; //Yh was:12    // Number of samples to be averaged in each message. Default: 12 (hourly)
 unsigned int  transmitInterval  = 1;      // Number of messages in each Iridium transmission (340-byte limit)
-unsigned int  retransmitLimit   = 2;      // Failed data transmission reattempts (340-byte limit)
+unsigned int  retransmitLimit   = 1;      // Failed data transmission reattempts (340-byte limit)
 unsigned int  gnssTimeout       = 120;    // Timeout for GNSS signal acquisition (seconds)
 unsigned int  iridiumTimeout    = 180;    // Timeout for Iridium transmission (seconds)
 bool          firstTimeFlag     = true;   // Flag to determine if program is running for the first time
@@ -499,7 +499,7 @@ void loop()
       {
         calculateStats(); // Calculate statistics of variables to be transmitted
 //Yh-031823-        writeBuffer();    // Write data to transmit buffer
-
+        LoRaTransmitData();  //Yh 042923
         // Check if data transmission interval has been reached
         if ((transmitCounter == transmitInterval) || firstTimeFlag)
         {
@@ -513,20 +513,19 @@ void loop()
             Serial.print("newDate: "); Serial.println(newDate);
           }
 //Yh-031823-          transmitData(); // Transmit data via Iridium transceiver
-          LoRaTransmitData();
-
-          //Wait for LoRa transmit to complete (max 1.5 sec):
-          //Note: Arduino-LoRa lib warns that onReceive and on onTxDone won't work on SAMD !!! Sh**!!
-          //According to https://iftnt.github.io/lora-air-time/index.html estimated air time is 534ms
-          uint32_t loRaTimer = millis();
-          const uint32_t loRaDelay = 1500;
-          while (!LoRaTransmitCompleted && ((millis() - loRaTimer)<loRaDelay))
-            myDelay(100);
-
-          if (millis() - loRaTimer>loRaDelay) DEBUG_PRINTLN("Warn - LoRa transmit exceeded"); else DEBUG_PRINTLN("Info - LoRa transmit OK");
-          LoRaTransmitCompleted = false;  //Reset flag for next iteration
-          
         }
+        
+        //Wait for LoRa transmit to complete (max 1.5 sec):
+        //Note: Arduino-LoRa lib warns that onReceive and on onTxDone won't work on SAMD !!! Sh**!!
+        //According to https://iftnt.github.io/lora-air-time/index.html estimated air time is 534ms
+        uint32_t loRaTimer = millis();
+        const uint32_t loRaDelay = 1500;
+        while (!LoRaTransmitCompleted && ((millis() - loRaTimer)<loRaDelay))
+          myDelay(100);
+
+        if (millis() - loRaTimer>loRaDelay) DEBUG_PRINTLN("Warn - LoRa transmit exceeded"); else DEBUG_PRINTLN("Info - LoRa transmit OK");
+        LoRaTransmitCompleted = false;  //Reset flag for next iteration
+        
         sampleCounter = 0; // Reset sample counter
       }
 
