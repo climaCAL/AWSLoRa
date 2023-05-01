@@ -441,11 +441,58 @@ void read7911()
   timer.read7911 = millis() - loopStartTime;
 }
 
+void readVMS3000()  //Anemometer model VMS-3000-FSJT-NPNR
+{
+  uint32_t loopStartTime = millis();
+
+  DEBUG_PRINTLN("Info - Reading VMS3000...");
+
+  // Configure pin mode
+  pinMode(PIN_WIND_SPEED, INPUT);
+
+  // Attach interrupt to wind speed input pin
+  attachInterrupt(PIN_WIND_SPEED, windSpeedIsr, FALLING);
+  revolutions = 0;
+
+  //Yh: 1er mai 23: Pourquoi ne pas utiliser myDelay(3000); à la place? 
+  //  cela éviterais le risque avec le WDT, non?
+
+  // Measure wind speed for 3 seconds
+  while (millis() < loopStartTime + 3000);
+  {
+    // Do nothing
+  }
+
+  // Detach interrupt from wind speed input pin
+  detachInterrupt(PIN_WIND_SPEED);
+
+  // Calculate wind speed according to Davis Instruments formula: V = P(1.75/T)
+  // V = speed in miles per hour
+  // P = no. of pulses in sample period
+  // T = duration of sample period in seconds
+  windSpeed = revolutions * 1.75/20.0;   // Calculate wind speed in metres per second
+
+  // Write data to union
+  LoRaMessage.windGustSpeed = windSpeed * 100;
+  LoRaMessage.windGustDirection = 1;  // Yh: good guess...
+
+  // Add to wind statistics
+  windSpeedStats.add(windSpeed);
+
+  // Print debug info
+  DEBUG_PRINT(F("Wind Speed: ")); DEBUG_PRINTLN(windSpeed);
+  //DEBUG_PRINT(F("Wind Direction: ")); DEBUG_PRINTLN(windDirection);
+
+  // Stop loop timer
+  timer.read7911 = millis() - loopStartTime;
+}
+
 // Interrupt service routine (ISR) for wind speed measurement
 // for Davis Instruments 7911 anemometer
 void windSpeedIsr()
 {
-  revolutions++;
+  if ( digitalRead(PIN_WIND_SPEED) == LOW )
+    revolutions++;
 }
 
 // Calculate mean wind speed and direction from vector components

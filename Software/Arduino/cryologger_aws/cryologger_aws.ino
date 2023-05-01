@@ -486,6 +486,7 @@ void loop()
       //readSp212();      // Read solar radiation
       //readSht31();      // Read temperature/relative humidity sensor
       //read7911();       // Read anemometer
+      readVMS3000();    // Read Anemometer model VMS-3000-FSJT-NPNR
       readHmp60();      // Read temperature/relative humidity sensor
       //read5103L();      // Read anemometer
       disable12V();     // Disable 12V power
