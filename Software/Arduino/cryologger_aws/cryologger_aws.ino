@@ -140,6 +140,10 @@
 
 #define SERIAL_PORT   Serial
 #define GNSS_PORT     Serial1
+
+//WindSensor module I2C address declaration:
+const uint16_t WIND_SENSOR_SLAVE_ADDR = 0x66;
+
 //Yh-031823-#define IRIDIUM_PORT  Serial2
 
 // Attach interrupt handler to SERCOM for new Serial instance
@@ -238,6 +242,7 @@ float         windSpeed         = 0.0;    // Wind speed (m/s)
 float         windDirection     = 0.0;    // Wind direction (°)
 float         windGustSpeed     = 0.0;    // Wind gust speed  (m/s)
 float         windGustDirection = 0.0;    // Wind gust direction (°)
+int           windDirectionSector = 0.0;  // Wind direction indicator (ref to DFRWindSpeed() for details)
 float         voltage           = 0.0;    // Battery voltage (V)
 float         latitude          = 0.0;    // GNSS latitude (DD)
 float         longitude         = 0.0;    // GNSS longitude (DD)
@@ -248,6 +253,14 @@ tmElements_t  tm;                         // Variable for converting time elemen
 // ----------------------------------------------------------------------------
 // Unions/structures
 // ----------------------------------------------------------------------------
+
+// DFRWindSensor (CAL) struc to store/retreive data
+typedef struct {
+  uint8_t regMemoryMap[6] = {0,0,0,0,0,0};
+  float angleVentFloat = 0;
+  uint16_t directionVentInt = 0;
+  float vitesseVentFloat = 0;
+}vent;
 
 // Union to store Iridium Short Burst Data (SBD) Mobile Originated (MO) messages
 // Yh 031823 - replaced moSbdMessage for LoRaMessage
@@ -330,7 +343,8 @@ struct struct_timer
   unsigned long readBme280;
   unsigned long readLsm303;
   unsigned long readHmp60;
-  unsigned long readSht31;
+  unsigned long readSht31;  
+  unsigned long readDFRWS;  //Yh-0504- New: readDFRWindSensor
   unsigned long read5103L;
   unsigned long read7911;
   unsigned long readSp212;
@@ -483,12 +497,13 @@ void loop()
       enable12V();      // Enable 12V power
       readBme280();     // Read sensor
       readLsm303();     // Read accelerometer
-      //readSp212();      // Read solar radiation
-      //readSht31();      // Read temperature/relative humidity sensor
-      //read7911();       // Read anemometer
-      readVMS3000();    // Read Anemometer model VMS-3000-FSJT-NPNR
+      //readSp212();    // Read solar radiation
+      //readSht31();    // Read temperature/relative humidity sensor
+      //read7911();     // Read anemometer
+      //readVMS3000();  // Read Anemometer model VMS-3000-FSJT-NPNR
+      readDFRWindSensor();  // Read Anemometer DFR Wind Sensor (DFRobot - CAL)
       readHmp60();      // Read temperature/relative humidity sensor
-      //read5103L();      // Read anemometer
+      //read5103L();    // Read anemometer
       disable12V();     // Disable 12V power
       disable5V();      // Disable 5V power
 

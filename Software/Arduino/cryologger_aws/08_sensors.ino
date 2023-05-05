@@ -441,7 +441,116 @@ void read7911()
   timer.read7911 = millis() - loopStartTime;
 }
 
-void readVMS3000()  //Anemometer model VMS-3000-FSJT-NPNR
+// ----------------------------------------------------------------------------
+// In-house (CAL) built of combined Wind Sensor
+// DFRobot WindSensor comprises the following 2:
+//    RS485 Wind Speed Transmitter (SEN0483) : https://wiki.dfrobot.com/RS485_Wind_Speed_Transmitter_SKU_SEN0483
+//    RS485 Wind Direction Transmitter (SEN0482) : https://wiki.dfrobot.com/RS485_Wind_Direction_Transmitter_SKU_SEN0482
+//Slave ragisters map (read-only):
+  /*
+  0x00  MSB Angle Vent
+  0x01  LSB Angle Vent
+  0x02  MSB Direction Vent
+  0x03  LSB Direction Vent
+  0x04  MSB Vitesse Vent
+  0x05  MSB Vitesse Vent
+  
+  * DFRobot wind direction sensor informations :
+  *
+  * Direction	      16 Directions Value   Angle(360°)
+  * North	                0	              0° - 11.2°
+  * North-northeast	      1	              11.3° - 33.7°
+  * Northeast	            2	              33.8° - 56.2°
+  * East-northeast	      3	              56.3° - 78.7°
+  * East	                4	              78.8° - 101.2°
+  * East-southeast	      5	              101.3° - 123.7°
+  * Southeast	            6	              123.8° - 146.2°
+  * South-southeast	      7	              146.3° - 168.7°
+  * South	                8	              168.8° - 191.2°
+  * South-southwest	      9	              191.3° - 213.7°
+  * Southwest	            10	            213.8° - 236.2°
+  * West-southwest	      11	            236.3° - 258.7°
+  * West	                12	            258.8° - 281.2°
+  * West-northwest	      13	            281.3° - 303.7°
+  * Northwest	            14	            303.8° - 326.2°
+  * North-northwest	      15	            326.3° - 348.7°
+  * North	                16	            348.8° - 360°
+ */
+// ----------------------------------------------------------------------------
+void readDFRWindSensor() 
+{
+  // Start the loop timer
+  unsigned long loopStartTime = millis();
+
+  DEBUG_PRINT("Info - Reading DFRWindSensor...");
+
+  // Requires I2C bus
+  Wire.begin();
+  myDelay(1000);
+
+  vent lectureVent;
+
+  byte len = Wire.requestFrom(WIND_SENSOR_SLAVE_ADDR,0x06);  //Requesting 6 bytes from slave
+  if (len != 0) {
+    while (Wire.available() > 0) {
+      for(int i = 0; i < 6; i++) {
+        lectureVent.regMemoryMap[i] = Wire.read(); 
+      }
+    }
+    lectureVent.angleVentFloat = ((lectureVent.regMemoryMap[0] << 8) + lectureVent.regMemoryMap[1])/10.0;
+    lectureVent.directionVentInt = (lectureVent.regMemoryMap[2] << 8) + lectureVent.regMemoryMap[3];
+    lectureVent.vitesseVentFloat = ((lectureVent.regMemoryMap[4] << 8) + lectureVent.regMemoryMap[5])/10.0;
+
+    windDirection = lectureVent.angleVentFloat;
+    windDirectionSector = lectureVent.directionVentInt;
+    windSpeed = lectureVent.vitesseVentFloat;   
+    
+  } else {
+    windDirection = 0.0;
+    windDirectionSector = 0;
+    windSpeed = 0; 
+  }
+
+  // Check and update wind gust speed and direction
+  if ((windSpeed > 0) && (windSpeed > windGustSpeed))
+  {
+    windGustSpeed = windSpeed;
+    windGustDirection = windDirection;
+  }
+
+  // Write data to union
+  LoRaMessage.windSpeed = windSpeed * 100;
+  LoRaMessage.windDirection = windDirection;
+
+  // Calculate wind speed and direction vectors
+  // http://tornado.sfsu.edu/geosciences/classes/m430/Wind/WindDirection.html
+  float windDirectionRadians = windDirection * DEG_TO_RAD;  // Convert wind direction from degrees to radians
+  float u = -1.0 * windSpeed * sin(windDirectionRadians);   // Magnitude of east-west component (u) of vector winds
+  float v = -1.0 * windSpeed * cos(windDirectionRadians);   // Magnitude of north-south component (v) of vector winds
+
+  // Write data to union
+  LoRaMessage.windGustSpeed = windGustSpeed * 100;
+  LoRaMessage.windGustDirection = windDirectionSector;  //Attention!!! On purpose not GustDirection
+
+  // Add to wind statistics
+  windSpeedStats.add(windSpeed);
+  uStats.add(u);
+  vStats.add(v);
+
+  // Print debug info
+  DEBUG_PRINT(F("Wind Speed: ")); DEBUG_PRINTLN(windSpeed);
+  DEBUG_PRINT(F("Wind Direction: ")); DEBUG_PRINTLN(windDirection);
+  DEBUG_PRINT(F("Wind Dir. Sector: ")); DEBUG_PRINTLN(windDirectionSector);
+
+    // Stop the loop timer
+  timer.readDFRWS = millis() - loopStartTime;
+}
+
+// ----------------------------------------------------------------------------
+// Anemometer model VMS-3000-FSJT-NPNR
+// reference: https://www.makerfabs.com/wiki/index.php?title=Anemometer
+// ----------------------------------------------------------------------------
+void readVMS3000()  
 {
   uint32_t loopStartTime = millis();
 
@@ -473,8 +582,8 @@ void readVMS3000()  //Anemometer model VMS-3000-FSJT-NPNR
   windSpeed = revolutions * 1.75/20.0;   // Calculate wind speed in metres per second
 
   // Write data to union
-  LoRaMessage.windGustSpeed = windSpeed * 100;
-  LoRaMessage.windGustDirection = 1;  // Yh: good guess...
+  LoRaMessage.windSpeed = windSpeed * 100;
+  //LoRaMessage.windDirection = 1;  //NA with VMS3000 alone
 
   // Add to wind statistics
   windSpeedStats.add(windSpeed);
