@@ -24,6 +24,9 @@
     Sensors:
     - RM Young 05103L Wind Monitor
     - Vaisala HMP60 Humidity and Temperature Probe
+    - (Yh added support) VMS3000 Anemometer
+    - (CAL added support) RS485 Wind Speed Transmitter (SEN0483) : https://wiki.dfrobot.com/RS485_Wind_Speed_Transmitter_SKU_SEN0483
+    - (CAL added support) RS485 Wind Direction Transmitter (SEN0482): https://wiki.dfrobot.com/RS485_Wind_Direction_Transmitter_SKU_SEN0482
 
     Comments:
     - Sketch uses 98720 bytes (37%) of program storage space. Maximum is 262144 bytes.
@@ -97,7 +100,7 @@
 #define PIN_HUMID           A3
 #define PIN_TEMP            A4
 #define PIN_GNSS_EN         A5
-#define PIN_MICROSD_CS      9   //Was:4 on adaloger
+#define PIN_MICROSD_CS      9   //Yh confirmedOk - april-may2023 - Was:4 on adaloger
 #define PIN_12V_EN          5   // 12 V step-up/down regulator
 #define PIN_5V_EN           6   // 5V step-down regulator
 #define PIN_LED_GREEN       10 //Was:8   // Green LED
@@ -188,13 +191,13 @@ Statistic vStats;               // Wind north-south wind vector component (v)
 // User defined global variable declarations
 // ----------------------------------------------------------------------------
 unsigned long sampleInterval    = 1;  //Yh was:5   // Sampling interval (minutes). Default: 5 min (300 seconds)
-unsigned int  averageInterval   = 1; //Yh was:12    // Number of samples to be averaged in each message. Default: 12 (hourly)
+unsigned int  averageInterval   = 5; //Yh was:12    // Number of samples to be averaged in each message. Default: 12 (hourly)
 unsigned int  transmitInterval  = 1;      // Number of messages in each Iridium transmission (340-byte limit)
 unsigned int  retransmitLimit   = 1;      // Failed data transmission reattempts (340-byte limit)
 unsigned int  gnssTimeout       = 120;    // Timeout for GNSS signal acquisition (seconds)
 unsigned int  iridiumTimeout    = 180;    // Timeout for Iridium transmission (seconds)
 bool          firstTimeFlag     = true;   // Flag to determine if program is running for the first time
-float         batteryCutoff     = 0.0;    // Battery voltage cutoff threshold (V)
+float         batteryCutoff     = 11.0;    // Battery voltage cutoff threshold (V)
 byte          loggingMode       = 1;  //Yh was:2    // Flag for new log file creation. 1: daily, 2: monthly, 3: yearly
 
 // ----------------------------------------------------------------------------
@@ -500,8 +503,8 @@ void loop()
       //readSp212();    // Read solar radiation
       //readSht31();    // Read temperature/relative humidity sensor
       //read7911();     // Read anemometer
-      //readVMS3000();  // Read Anemometer model VMS-3000-FSJT-NPNR
-      readDFRWindSensor();  // Read Anemometer DFR Wind Sensor (DFRobot - CAL)
+      readVMS3000();  // Read Anemometer model VMS-3000-FSJT-NPNR
+      //readDFRWindSensor();  // Read Anemometer DFR Wind Sensor (DFRobot - CAL)
       readHmp60();      // Read temperature/relative humidity sensor
       //read5103L();    // Read anemometer
       disable12V();     // Disable 12V power
