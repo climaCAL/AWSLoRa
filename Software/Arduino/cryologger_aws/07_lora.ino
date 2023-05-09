@@ -51,6 +51,13 @@ void LoRaTransmitData()
     
   DEBUG_PRINTLN("Info - LoRa transmiting message...");
 
+  // Configure pin 7 (AdaLora) - DIO0 (RFM95) to input
+  //  pinMode(PIN_RFM95_INT, INPUT_PULLUP); //Let's assume it is not required to set as INPUT_PULLUP
+
+  // Attach interrupt to wind speed input pin
+  // Yh 0905 - doesn't work neither, so commenting out
+  //attachInterrupt(PIN_RFM95_INT, LoRaSendCallback, FALLING);
+
 //Set in-house protocol stuff:
  	LoRaMessage.frameVersion = currentSupportedFrameVersion;
  	LoRaMessage.recipient    = destination;
@@ -66,9 +73,6 @@ void LoRaTransmitData()
   transmitCounter = 1;
   iterationCounter++; // Increment iteration counter
 
-  // Put modem to sleep
-  DEBUG_PRINTLN("Info - Putting LoRa module to sleep...");
-  //LoRa.sleep();
 
   // Stop the loop timer
   timer.lora = millis() - loopStartTime;
@@ -81,7 +85,9 @@ void LoRaTransmitData()
 //   but I don't know why and I would like to test it (change lib)
 void LoRaSendCallback()
 {
-  //DEBUG_PRINTLN("LoRa callBack");  //Attention! Risqué!
+  // Detach interrupt from RFM95 DIO0 pin
+  detachInterrupt(PIN_RFM95_INT);
+
   uint32_t ToAStop = micros();
   if (ToAStop > ToAStart)
     LoRaTimeOnAir = ToAStop - ToAStart;
@@ -89,4 +95,9 @@ void LoRaSendCallback()
   // Write duration of last transmission to union
   LoRaMessage.transmitDuration = (LoRaTimeOnAir/1000UL);
   LoRaTransmitCompleted = true;
+  
+  // Put modem to sleep
+  DEBUG_PRINTLN("Info - Putting LoRa module to sleep...");
+  LoRa.sleep();
+
 }

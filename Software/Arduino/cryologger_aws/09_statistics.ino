@@ -13,6 +13,9 @@ void calculateStats()
   // Calculate mean wind speed and direction vectors
   windVectors();
 
+  //Yh 0508(may): hack to ensure WinSpeed is ok:
+  //LoRaMessage.windSpeed = windSpeed * 100;  //Yh thus, not a 5min average.
+
   // Clear all statistics objects
   clearStats();
 

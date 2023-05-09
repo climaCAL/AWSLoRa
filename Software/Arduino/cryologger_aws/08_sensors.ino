@@ -567,10 +567,14 @@ void readVMS3000()
   //  cela éviterais le risque avec le WDT, non?
 
   // Measure wind speed for 3 seconds
-  while (millis() < loopStartTime + 3000);
-  {
-    // Do nothing
-  }
+  // while (millis() < loopStartTime + 3000);
+  // {
+  //   // Do nothing
+  // }
+
+  //DEBUG_PRINTLN("capturing..."+String(millis()/1000));
+  myDelay(3000);   //Yh 0805 - works!
+  //DEBUG_PRINTLN("... done! "+String(millis()/1000));
 
   // Detach interrupt from wind speed input pin
   detachInterrupt(PIN_WIND_SPEED);
@@ -581,19 +585,43 @@ void readVMS3000()
   // T = duration of sample period in seconds
   windSpeed = revolutions * 1.75/20.0;   // Calculate wind speed in metres per second
 
+  if (windSpeed == 0)
+  {
+    windDirection = 0.0;
+  }
+
+    // Check and update wind gust speed and direction
+  if ((windSpeed > 0) && (windSpeed > windGustSpeed))
+  {
+    windGustSpeed = windSpeed;
+    windGustDirection = windDirection;
+  }
+
+  // Calculate wind speed and direction vectors
+  // http://tornado.sfsu.edu/geosciences/classes/m430/Wind/WindDirection.html
+  float windDirectionRadians = windDirection * DEG_TO_RAD;  // Convert wind direction from degrees to radians
+  float u = -1.0 * windSpeed * sin(windDirectionRadians);   // Magnitude of east-west component (u) of vector winds
+  float v = -1.0 * windSpeed * cos(windDirectionRadians);   // Magnitude of north-south component (v) of vector winds
+
   // Write data to union
-  LoRaMessage.windSpeed = windSpeed * 100;
-  //LoRaMessage.windDirection = 1;  //NA with VMS3000 alone
+  LoRaMessage.windGustSpeed = windGustSpeed * 100;
+  LoRaMessage.windGustDirection = windGustDirection * 10;
 
   // Add to wind statistics
   windSpeedStats.add(windSpeed);
+  uStats.add(u);
+  vStats.add(v);
+
+  // Write data to union
+  LoRaMessage.windSpeed = windSpeed * 100;
+  LoRaMessage.windDirection = 1;  //NA with VMS3000 alone, but required? Yh 0805(may)
 
   // Print debug info
   DEBUG_PRINT(F("Wind Speed: ")); DEBUG_PRINTLN(windSpeed);
   //DEBUG_PRINT(F("Wind Direction: ")); DEBUG_PRINTLN(windDirection);
 
   // Stop loop timer
-  timer.read7911 = millis() - loopStartTime;
+  timer.readVMS3K = millis() - loopStartTime;
 }
 
 // Interrupt service routine (ISR) for wind speed measurement

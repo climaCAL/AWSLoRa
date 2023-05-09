@@ -66,7 +66,7 @@
 // ----------------------------------------------------------------------------
 // Debugging macros
 // ----------------------------------------------------------------------------
-#define DEBUG           true   // Output debug messages to Serial Monitor
+#define DEBUG           false   // Output debug messages to Serial Monitor
 #define DEBUG_GNSS      false  // Output GNSS debug information
 #define DEBUG_IRIDIUM   false  // Output Iridium debug messages to Serial Monitor
 #define CALIBRATE       false  // Enable sensor calibration code
@@ -115,7 +115,7 @@
 
 //RFM95 - LoRa module
 //PMOD-RFM95: CS=10, RST=11, INT/DIO0=12
-//AdaRFM95: CS=8, RST=4, INt/DIO0=7
+//AdaRFM95: CS=8, RST=4, INT/DIO0=7
 #define PIN_RFM95_CS        8 //marked as D10, PA18
 #define PIN_RFM95_RST       4  //marked as D11, PA16
 #define PIN_RFM95_INT       7  //marked as D12, PA19
@@ -191,7 +191,7 @@ Statistic vStats;               // Wind north-south wind vector component (v)
 // User defined global variable declarations
 // ----------------------------------------------------------------------------
 unsigned long sampleInterval    = 1;  //Yh was:5   // Sampling interval (minutes). Default: 5 min (300 seconds)
-unsigned int  averageInterval   = 5; //Yh was:12    // Number of samples to be averaged in each message. Default: 12 (hourly)
+unsigned int  averageInterval   = 1; //Yh was:12    // Number of samples to be averaged in each message. Default: 12 (hourly)
 unsigned int  transmitInterval  = 1;      // Number of messages in each Iridium transmission (340-byte limit)
 unsigned int  retransmitLimit   = 1;      // Failed data transmission reattempts (340-byte limit)
 unsigned int  gnssTimeout       = 120;    // Timeout for GNSS signal acquisition (seconds)
@@ -347,13 +347,15 @@ struct struct_timer
   unsigned long readLsm303;
   unsigned long readHmp60;
   unsigned long readSht31;  
-  unsigned long readDFRWS;  //Yh-0504- New: readDFRWindSensor
+  unsigned long readDFRWS;  //Yh-0504 - New: readDFRWindSensor
+  unsigned long readVMS3K;  //Yh-0508 - New: readVMS3000 wind sensor
   unsigned long read5103L;
   unsigned long read7911;
   unsigned long readSp212;
   unsigned long iridium;  //Yh-031823-not req
   unsigned long lora;  //Yh-031823-new
 } timer;
+
 
 // ----------------------------------------------------------------------------
 // Setup
@@ -534,16 +536,21 @@ void loop()
 //Yh-031823-          transmitData(); // Transmit data via Iridium transceiver
         }
         
+        // Yh 090 - Ok, since interrupt handling for LoRa does not work
         //Wait for LoRa transmit to complete (max 1.5 sec):
         //Note: Arduino-LoRa lib warns that onReceive and on onTxDone won't work on SAMD !!! Sh**!!
         //According to https://iftnt.github.io/lora-air-time/index.html estimated air time is 534ms
-        uint32_t loRaTimer = millis();
-        const uint32_t loRaDelay = 1500;
-        while (!LoRaTransmitCompleted && ((millis() - loRaTimer)<loRaDelay))
-          myDelay(100);
+        //uint32_t loRaTimer = millis();
+        //const uint32_t loRaDelay = 1500;
+        //while (!LoRaTransmitCompleted && ((millis() - loRaTimer)<loRaDelay))
+        //  myDelay(400);
 
-        if (millis() - loRaTimer>loRaDelay) DEBUG_PRINTLN("Warn - LoRa transmit exceeded"); else DEBUG_PRINTLN("Info - LoRa transmit OK");
+        //if (millis() - loRaTimer>loRaDelay) DEBUG_PRINTLN("Warn - LoRa transmit exceeded"); else DEBUG_PRINTLN("Info - LoRa transmit OK");
         LoRaTransmitCompleted = false;  //Reset flag for next iteration
+
+        // Put modem to sleep
+        DEBUG_PRINTLN("Info - Putting LoRa module to sleep...");
+        LoRa.sleep();
         
         sampleCounter = 0; // Reset sample counter
       }
