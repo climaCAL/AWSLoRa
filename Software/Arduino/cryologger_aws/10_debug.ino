@@ -127,35 +127,35 @@ void printMoSbdHex()
 }
 
 // Print contents of transmit buffer
-void printMoSbdBuffer()
-{
-  printLine();
-  DEBUG_PRINTLN("MO-SBD Transmit buffer");
-  printLine();
-  char tempData[16];
-  DEBUG_PRINTLN("Byte\tHex");
-  for (int i = 0; i < moSbdBufferSize; ++i)
-  {
-    sprintf(tempData, "%d\t0x%02X", i, moSbdBuffer[i]);
-    DEBUG_PRINTLN(tempData);
-  }
-}
+// void printMoSbdBuffer()
+// {
+//   printLine();
+//   DEBUG_PRINTLN("MO-SBD Transmit buffer");
+//   printLine();
+//   char tempData[16];
+//   DEBUG_PRINTLN("Byte\tHex");
+//   for (int i = 0; i < moSbdBufferSize; ++i)
+//   {
+//     sprintf(tempData, "%d\t0x%02X", i, moSbdBuffer[i]);
+//     DEBUG_PRINTLN(tempData);
+//   }
+// }
 
 // Print contents of transmit buffer
-void printMtSbdBuffer()
-{
-  printLine();
-  DEBUG_PRINTLN("MT-SBD Transmit buffer");
-  printLine();
-  // Print contents of mtSbdBuffer in hexadecimal
-  char tempData[16];
-  DEBUG_PRINTLN("Byte\tHex");
-  for (int i = 0; i < mtSbdBufferSize; ++i)
-  {
-    sprintf(tempData, "%d\t0x%02X", i, mtSbdBuffer[i]);
-    DEBUG_PRINTLN(tempData);
-  }
-}
+// void printMtSbdBuffer()
+// {
+//   printLine();
+//   DEBUG_PRINTLN("MT-SBD Transmit buffer");
+//   printLine();
+//   // Print contents of mtSbdBuffer in hexadecimal
+//   char tempData[16];
+//   DEBUG_PRINTLN("Byte\tHex");
+//   for (int i = 0; i < mtSbdBufferSize; ++i)
+//   {
+//     sprintf(tempData, "%d\t0x%02X", i, mtSbdBuffer[i]);
+//     DEBUG_PRINTLN(tempData);
+//   }
+// }
 
 // Function to print available 32K SRAM memory
 extern "C" char *sbrk(int i);

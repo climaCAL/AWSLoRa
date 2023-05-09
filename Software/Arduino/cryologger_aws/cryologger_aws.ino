@@ -208,10 +208,10 @@ volatile bool wdtFlag           = false;  // Flag for Watchdog Timer interrupt s
 volatile int  wdtCounter        = 0;      // Watchdog Timer interrupt counter
 volatile int  revolutions       = 0;      // Wind speed ISR counter
 bool          resetFlag         = false;  // Flag to force system reset using Watchdog Timer
-uint8_t       moSbdBuffer[340];           // Buffer for Mobile Originated SBD (MO-SBD) message (340 bytes max)
-uint8_t       mtSbdBuffer[270];           // Buffer for Mobile Terminated SBD (MT-SBD) message (270 bytes max)
-size_t        moSbdBufferSize;
-size_t        mtSbdBufferSize;
+//uint8_t       moSbdBuffer[340];           // Buffer for Mobile Originated SBD (MO-SBD) message (340 bytes max)
+//uint8_t       mtSbdBuffer[270];           // Buffer for Mobile Terminated SBD (MT-SBD) message (270 bytes max)
+//size_t        moSbdBufferSize;
+//size_t        mtSbdBufferSize;
 char          logFileName[30]   = "";     // Log file name
 char          dateTime[30]      = "";     // Datetime buffer
 byte          retransmitCounter = 0;      // Counter for Iridium 9603 transmission reattempts
@@ -505,7 +505,7 @@ void loop()
       //readSp212();    // Read solar radiation
       //readSht31();    // Read temperature/relative humidity sensor
       //read7911();     // Read anemometer
-      readVMS3000();  // Read Anemometer model VMS-3000-FSJT-NPNR
+      //readVMS3000();  // Read Anemometer model VMS-3000-FSJT-NPNR
       //readDFRWindSensor();  // Read Anemometer DFR Wind Sensor (DFRobot - CAL)
       readHmp60();      // Read temperature/relative humidity sensor
       //read5103L();    // Read anemometer
