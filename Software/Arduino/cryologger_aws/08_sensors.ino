@@ -1,4 +1,22 @@
 // ----------------------------------------------------------------------------
+// Utility function to detect I2C sensor lockup 
+// ----------------------------------------------------------------------------
+bool scanI2CbusFor(uint8_t lookForAddress) {
+  bool retCode = false;
+  Wire.beginTransmission(lookForAddress);
+  uint8_t error = Wire.endTransmission();
+  if (error == 0) {   /*if I2C device found*/
+    // Serial.print("I2C device found at address 0x");/*print this line if I2C device found*/
+    // if (lookForAddress<16) {
+    //   Serial.print("0");
+    // }
+    // Serial.println(lookForAddress,HEX);
+    retCode = true;
+  }
+  return retCode;
+}
+
+// ----------------------------------------------------------------------------
 // Adafruit BME280 Temperature Humidity Pressure Sensor
 // https://www.adafruit.com/product/2652
 // ----------------------------------------------------------------------------
@@ -10,13 +28,17 @@ void configureBme280()
   
   // Ok, on 031923 - Stuck here, at the "begin"...!!!  hangging ... until WDT force restart
 
-  if (bme280.begin())
-  {
-    online.bme280 = true;
-    DEBUG_PRINTLN("success!");
-  }
-  else
-  {
+  bool retCode = false;
+
+//  if (scanI2CbusFor(0x76))
+    if (bme280.begin())
+    {
+      online.bme280 = true;
+      DEBUG_PRINTLN("success!");
+      retCode = true;
+    }
+
+  if (!retCode) {
     online.bme280 = false;
     DEBUG_PRINTLN("failed!");
   }
@@ -509,6 +531,12 @@ void readDFRWindSensor()
     windDirection = 0.0;
     windDirectionSector = 0;
     windSpeed = 0; 
+  }
+
+  if (windSpeed == 0)
+  {
+    windDirection = 0.0;
+    windDirectionSector = 0;
   }
 
   // Check and update wind gust speed and direction

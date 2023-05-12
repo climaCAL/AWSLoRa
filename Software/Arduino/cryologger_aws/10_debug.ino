@@ -50,8 +50,8 @@ void printTimers()
   DEBUG_PRINT("readHmp60: ");       printTab(1);  DEBUG_PRINTLN(timer.readHmp60);
   //DEBUG_PRINT("readSht31: ");       printTab(1);  DEBUG_PRINTLN(timer.readSht31);
   DEBUG_PRINT("read5103L: ");       printTab(1);  DEBUG_PRINTLN(timer.read5103L);
-  DEBUG_PRINT("readVMS3K: ");       printTab(1);  DEBUG_PRINTLN(timer.readVMS3K);
-  //DEBUG_PRINT("readDFRWS: ");       printTab(1);  DEBUG_PRINTLN(timer.readDFRWS);
+  //DEBUG_PRINT("readVMS3K: ");       printTab(1);  DEBUG_PRINTLN(timer.readVMS3K);
+  DEBUG_PRINT("readDFRWS: ");       printTab(1);  DEBUG_PRINTLN(timer.readDFRWS);
   //DEBUG_PRINT("read7911: ");        printTab(1);  DEBUG_PRINTLN(timer.read7911);
   DEBUG_PRINT("readGnss: ");        printTab(1);  DEBUG_PRINTLN(timer.readGnss);
   DEBUG_PRINT("transmitData: ");    printTab(1);  DEBUG_PRINTLN(timer.iridium);

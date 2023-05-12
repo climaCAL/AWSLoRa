@@ -66,7 +66,7 @@
 // ----------------------------------------------------------------------------
 // Debugging macros
 // ----------------------------------------------------------------------------
-#define DEBUG           false   // Output debug messages to Serial Monitor
+#define DEBUG           true   // Output debug messages to Serial Monitor
 #define DEBUG_GNSS      false  // Output GNSS debug information
 #define DEBUG_IRIDIUM   false  // Output Iridium debug messages to Serial Monitor
 #define CALIBRATE       false  // Enable sensor calibration code
@@ -506,8 +506,8 @@ void loop()
       //readSht31();    // Read temperature/relative humidity sensor
       //read7911();     // Read anemometer
       //readVMS3000();  // Read Anemometer model VMS-3000-FSJT-NPNR
-      //readDFRWindSensor();  // Read Anemometer DFR Wind Sensor (DFRobot - CAL)
       readHmp60();      // Read temperature/relative humidity sensor
+      readDFRWindSensor();  // Read Anemometer DFR Wind Sensor (DFRobot - CAL) Yh last in read, gives time for the module to settle comfortably      
       //read5103L();    // Read anemometer
       disable12V();     // Disable 12V power
       disable5V();      // Disable 5V power
