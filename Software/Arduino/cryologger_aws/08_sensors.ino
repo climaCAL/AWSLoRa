@@ -20,9 +20,9 @@ bool scanI2CbusFor(uint8_t lookForAddress) {
 // Adafruit BME280 Temperature Humidity Pressure Sensor
 // https://www.adafruit.com/product/2652
 // ----------------------------------------------------------------------------
-void configureBme280()
+void configureBme280(uint8_t devID)
 {
-  DEBUG_PRINT("Info - Initializing BME280...");
+  DEBUG_PRINT("Info - Initializing BME280 ("+String(devID)+")...");
 
   // Yh 031823 - May I suggest to "ping" expected/defaut device I2C address first in order to test presence? Then try begin.
   
@@ -30,54 +30,151 @@ void configureBme280()
 
   bool retCode = false;
 
-//  if (scanI2CbusFor(0x76))
-    if (bme280.begin())
+  if (devID < 2) {
+
+    //Set bme280 device's address, default is 0x77
+    uint8_t devAddr = 0x77;
+    if (devID == 0) devAddr = 0x76;
+
+  //  if (scanI2CbusFor(0x76)) -- TBV if this works
+    if (bme280.begin(devAddr))
     {
-      online.bme280 = true;
+      online.bme280[devID] = true;
       DEBUG_PRINTLN("success!");
       retCode = true;
     }
+    if (!retCode) {
+      online.bme280[devID] = false;
+      DEBUG_PRINTLN("failed!");
+    }
+  } else {
+    DEBUG_PRINTLN("bme280 init: wrong devID!");
+  }
 
-  if (!retCode) {
-    online.bme280 = false;
+}
+
+// Read BME280
+void readBme280(uint8_t devID)
+{
+  // Start the loop timer
+  unsigned long loopStartTime = millis();
+
+  if (devID == 0 || devID == 1) {
+
+    // Initialize sensor
+    configureBme280(devID);
+
+    // Check if sensor initialized successfully
+    if (online.bme280[devID])  {
+      DEBUG_PRINT("Info - Reading BME280 ("+String(devID)+")...");
+
+      myDelay(250);
+
+      // Read sensor data
+      if (devID == 1) {  // AKA as the external one
+        temperatureExt  = tempBmeEXT_CF * bme280.readTemperature() + tempBmeEXT_Offset;
+        uint16_t humExt = humBmeEXT_CF * bme280.readHumidity() + humBmeEXT_Offset;
+
+        if (humExt >= 100) {
+          humidityExt = 100;
+        } else {
+          humidityExt = humExt;
+        }
+        
+        // Add to statistics object
+        temperatureExtStats.add(temperatureExt );
+        humidityExtStats.add(humidityExt);
+      }
+      if (devID == 0) {  // AKA as the internal one
+        // Read sensor data
+        temperatureInt = tempImeINT_CF * bme280.readTemperature() + tempBmeINT_Offset ;
+        uint16_t humInt =  humImeINT_CF * bme280.readHumidity() + humBmeINT_Offset; // no need of correction
+        pressureInt = bme280.readPressure() / 100.0F;
+
+        if (humInt >= 100) {
+          humidityInt = 100;
+        } else {
+          humidityInt = humInt;
+        }
+
+        // Add to statistics object
+        temperatureIntStats.add(temperatureInt);
+        humidityIntStats.add(humidityInt);
+        pressureIntStats.add(pressureInt);
+      }
+      DEBUG_PRINTLN("done.");
+    }
+    else
+    {
+      DEBUG_PRINTLN("Warning - BME280 offline!");
+    }
+  } else {
+    DEBUG_PRINTLN("ERROR - bme280 read: wrong devID!");
+  }
+  // Stop the loop timer
+  timer.readBme280 = millis() - loopStartTime;
+}
+
+// ----------------------------------------------------------------------------
+// Adafruit VEML7700 Lux Meter -- Basé sur le BME280
+// ----------------------------------------------------------------------------
+void configureVEML7700(Adafruit_VEML7700 &veml)
+{
+  DEBUG_PRINT("Info - Initializing BME280...");
+  
+  if (veml.begin())
+  {
+    online.veml7700 = true;
+    DEBUG_PRINTLN("success!");
+    /*
+    veml.setGain(VEML7700_GAIN_2);
+    veml.setIntegrationTime(VEML7700_IT_200MS);
+    */
+  }
+  else
+  {
+    online.veml7700 = false;
     DEBUG_PRINTLN("failed!");
   }
 }
 
 // Read BME280
-void readBme280()
+void readVeml7700()
 {
   // Start the loop timer
   unsigned long loopStartTime = millis();
 
+  Adafruit_VEML7700 veml = Adafruit_VEML7700();
+   
   // Initialize sensor
-  configureBme280();
-
+  configureVEML7700(veml);
+  
   // Check if sensor initialized successfully
-  if (online.bme280)
+  if (online.veml7700)
   {
-    DEBUG_PRINT("Info - Reading BME280...");
+    DEBUG_PRINT("Info - Reading VEML7700...");
 
     myDelay(250);
 
-    // Read sensor data
-    temperatureInt = bme280.readTemperature();
-    humidityInt = bme280.readHumidity();
-    pressureInt = bme280.readPressure() / 100.0F;
+// Add acquisition
+  int32_t soleil = veml_CF * veml.readLux() + veml_Offset; // Default = VEML_LUX_NORMAL
+  
+  if(soleil <= 0) {
+    solar = 0;
+  } else {
+    solar = soleil;
+  }
 
-    // Add to statistics object
-    temperatureIntStats.add(temperatureInt);
-    humidityIntStats.add(humidityInt);
-    pressureIntStats.add(pressureInt);
-
+  solarStats.add(solar);
+  
     DEBUG_PRINTLN("done.");
   }
   else
   {
-    DEBUG_PRINTLN("Warning - BME280 offline!");
+    DEBUG_PRINTLN("Warning - VEML7700 offline!");
   }
   // Stop the loop timer
-  timer.readBme280 = millis() - loopStartTime;
+  timer.readVeml7700 = millis() - loopStartTime;
 }
 
 // ----------------------------------------------------------------------------
@@ -504,8 +601,8 @@ void readDFRWindSensor()
   // Start the loop timer
   unsigned long loopStartTime = millis();
 
-  DEBUG_PRINT("Info - Reading DFRWindSensor...");
-
+  DEBUG_PRINT("Info - Reading DFRWindSensor... sensor settle time of 2sec");
+  myDelay(2000);
   // Requires I2C bus
   Wire.begin();
   myDelay(1000);
@@ -546,7 +643,7 @@ void readDFRWindSensor()
     windGustDirection = windDirection;
   }
 
-  // Write data to union
+  // Write data to union (LoRa)
   LoRaMessage.windSpeed = windSpeed * 100;
   LoRaMessage.windDirection = windDirection;
 
@@ -558,8 +655,8 @@ void readDFRWindSensor()
 
   // Write data to union
   LoRaMessage.windGustSpeed = windGustSpeed * 100;
-  LoRaMessage.windGustDirection = windDirectionSector;  //Attention!!! On purpose not GustDirection
-
+  LoRaMessage.windGustDirection = windGustDirection*10; 
+  
   // Add to wind statistics
   windSpeedStats.add(windSpeed);
   uStats.add(u);

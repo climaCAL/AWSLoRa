@@ -127,7 +127,7 @@ void wakeUp()
   enableSerial();
 
   //Yh 031923 - wait for Serial to be back:
-  myDelay(5000);
+  myDelay(2000);
 }
 
 // Non-blocking blink LED (https://forum.arduino.cc/index.php?topic=503368.0)

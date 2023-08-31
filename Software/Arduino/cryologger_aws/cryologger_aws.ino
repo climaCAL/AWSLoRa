@@ -14,7 +14,7 @@
     - Adafruit Feather M0 Adalogger
     - (Yh new) RFM95 - Lora Module OR Adafruit M0 LoRa
     - Adafruit Ultimate GPS Featherwing
-    - Adafruit BME280 Temperature Humidity Pressure Sensor
+    - Adafruit BME280 Temperature Humidity Pressure Sensor  x2: internal and external
     - Adafruit LSM303AGR Accelerometer/Magnetomter
     - Pololu 3.3V 600mA Step-Down Voltage Regulator D36V6F3
     - Pololu 5V 600mA Step-Down Voltage Regulator D36V6F5
@@ -27,10 +27,11 @@
     - (Yh added support) VMS3000 Anemometer
     - (CAL added support) RS485 Wind Speed Transmitter (SEN0483) : https://wiki.dfrobot.com/RS485_Wind_Speed_Transmitter_SKU_SEN0483
     - (CAL added support) RS485 Wind Direction Transmitter (SEN0482): https://wiki.dfrobot.com/RS485_Wind_Direction_Transmitter_SKU_SEN0482
+    - (CAL added support) VEML
 
     Comments:
-    - Sketch uses 98720 bytes (37%) of program storage space. Maximum is 262144 bytes.
-    - Power consumption in deep sleep is ~625 uA at 12.5V
+    - (asof 08/30/2023: Sketch uses 94936 bytes (36%) of program storage space. Maximum is 262144 bytes.)
+    - Yh:TBV ... Power consumption in deep sleep is ~625 uA at 12.5V
 
 */
 
@@ -52,6 +53,7 @@
 #include <TinyGPS++.h>              // https://github.com/mikalhart/TinyGPSPlus (v1.0.3)
 #include <Wire.h>                   // https://www.arduino.cc/en/Reference/Wire
 #include <wiring_private.h>         // Required for creating new Serial instance
+#include "Adafruit_VEML7700.h"      // https://github.com/adafruit/Adafruit_VEML7700  (Be careful: see CAL modified)
 
 // ----------------------------------------------------------------------------
 // Define unique identifier
@@ -62,6 +64,12 @@
 // Data logging
 // ----------------------------------------------------------------------------
 #define LOGGING         true  // Log data to microSD
+
+// ----------------------------------------------------------------------------
+// Define modifed addresses
+// ----------------------------------------------------------------------------
+#define BME280_ADR1 0x77    // Second address for the BME280 - Used for the outside sensor.
+#define BME280_ADR2 0x76    // Second address for the BME280 - Used for the inside sensor.
 
 // ----------------------------------------------------------------------------
 // Debugging macros
@@ -190,7 +198,7 @@ Statistic vStats;               // Wind north-south wind vector component (v)
 // ----------------------------------------------------------------------------
 // User defined global variable declarations
 // ----------------------------------------------------------------------------
-unsigned long sampleInterval    = 1;  //Yh was:5   // Sampling interval (minutes). Default: 5 min (300 seconds)
+unsigned long sampleInterval    = 5;  //Yh was:5   // Sampling interval (minutes). Default: 5 min (300 seconds)
 unsigned int  averageInterval   = 1; //Yh was:12    // Number of samples to be averaged in each message. Default: 12 (hourly)
 unsigned int  transmitInterval  = 1;      // Number of messages in each Iridium transmission (340-byte limit)
 unsigned int  retransmitLimit   = 1;      // Failed data transmission reattempts (340-byte limit)
@@ -199,6 +207,25 @@ unsigned int  iridiumTimeout    = 180;    // Timeout for Iridium transmission (s
 bool          firstTimeFlag     = true;   // Flag to determine if program is running for the first time
 float         batteryCutoff     = 11.0;    // Battery voltage cutoff threshold (V)
 byte          loggingMode       = 1;  //Yh was:2    // Flag for new log file creation. 1: daily, 2: monthly, 3: yearly
+
+// ----------------------------------------------------------------------------
+// Sensors correction factor and offsets -- to modify -- 
+// ----------------------------------------------------------------------------
+//BME280 -- Exterior sensor
+float tempBmeEXT_CF             = 1.046;    // Correction factor for exterior temperature acquisition.
+float tempBmeEXT_Offset         = -0.805;   // Offset for exterior temperature acquisition.
+float humBmeEXT_CF              = 1.09;     // Correction factor for exterior humidity acquisition.
+float humBmeEXT_Offset          = 2.3;      // Offset for exterior humidity acquisition.
+
+//BME280 -- Interior sensor
+float tempImeINT_CF             = 1.05;     // Correction factor for interior temperature acquisition.
+float tempBmeINT_Offset         = -1.07;    // Offset for interior temperature acquisition.
+float humImeINT_CF              = 1.0;      // Correction factor for interior humidity acquisition.
+float humBmeINT_Offset          = 0.0;      // Offset for interior humidity acquisition.
+
+//VEML7700
+float veml_CF                   = 15.172;   // Correction factor for light intensity acquisition.
+float veml_Offset               = -998;     // Offset for light intensity acquisition.
 
 // ----------------------------------------------------------------------------
 // Global variable declarations
@@ -270,7 +297,7 @@ typedef struct {
 
 const byte localAddress = 0x01;     // address of this device
 const byte destination = 0xF1;      // destination to send to (gateway, repeater)
-const byte currentSupportedFrameVersion = 0x03;  //AWS cryologger
+const byte currentSupportedFrameVersion = 0x05;  //AWS cryologger
 
 typedef union
 {
@@ -287,7 +314,7 @@ typedef union
     uint16_t  humidityExt;        // External humidity (%)          (2 bytes)   * 10
     int16_t   pitch;              // Pitch (°)                      (2 bytes)   * 100
     int16_t   roll;               // Roll (°)                       (2 bytes)   * 100
-    //uint16_t  solar;              // Solar irradiance (W m-2)       (2 bytes)   * 100
+    uint16_t  solar;              // Solar irradiance (W m-2)       (2 bytes)   // CAREFUL: AWSSat=32b*100 vs AWSLoRa=16b*1
     uint16_t  windSpeed;          // Mean wind speed (m/s)          (2 bytes)   * 100
     uint16_t  windDirection;      // Mean wind direction (°)        (2 bytes)
     uint16_t  windGustSpeed;      // Wind gust speed (m/s)          (2 bytes)   * 100
@@ -301,7 +328,7 @@ typedef union
     uint8_t   transmitStatus;     // Iridium return code            (1 byte)
     uint16_t  iterationCounter;   // Message counter                (2 bytes)
   } __attribute__((packed));                                    // Total: (47 bytes)
-  uint8_t bytes[47];
+  uint8_t bytes[49];
 } LORA_MESSAGE;
 
 LORA_MESSAGE LoRaMessage;
@@ -328,7 +355,8 @@ SBD_MT_MESSAGE mtSbdMessage;
 // Structure to store device online/offline states
 struct struct_online
 {
-  bool bme280   = false;
+  bool bme280[2]   = {false, false};
+  bool veml7700 = false;
   bool lsm303   = false;
   bool gnss     = false;
   bool microSd  = false;
@@ -344,6 +372,7 @@ struct struct_timer
   unsigned long writeMicroSd;
   unsigned long readGnss;
   unsigned long readBme280;
+  unsigned long readVeml7700;
   unsigned long readLsm303;
   unsigned long readHmp60;
   unsigned long readSht31;  
@@ -500,7 +529,8 @@ void loop()
       // Perform measurements
       enable5V();       // Enable 5V power
       enable12V();      // Enable 12V power
-      readBme280();     // Read sensor
+      readBme280(1);     // Read sensor (external one)
+      readBme280(0);     // Read second bme (internal one)
       readLsm303();     // Read accelerometer
       //readSp212();    // Read solar radiation
       //readSht31();    // Read temperature/relative humidity sensor
@@ -509,8 +539,8 @@ void loop()
       readHmp60();      // Read temperature/relative humidity sensor
       readDFRWindSensor();  // Read Anemometer DFR Wind Sensor (DFRobot - CAL) Yh last in read, gives time for the module to settle comfortably      
       //read5103L();    // Read anemometer
-      disable12V();     // Disable 12V power
-      disable5V();      // Disable 5V power
+      //disable12V();     // Disable 12V power  -- moved after dara transmit
+      //disable5V();      // Disable 5V power   -- moved after data transmit
 
       // Print summary of statistics
       printStats();
@@ -563,6 +593,9 @@ void loop()
 
       // Set the RTC alarm
       setRtcAlarm();
+
+      disable12V();     // Disable 12V power
+      disable5V();      // Disable 5V power
 
       DEBUG_PRINTLN("Info - Entering deep sleep...");
       DEBUG_PRINTLN();
