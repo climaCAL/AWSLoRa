@@ -536,7 +536,8 @@ void loop()
       //readSht31();    // Read temperature/relative humidity sensor
       //read7911();     // Read anemometer
       //readVMS3000();  // Read Anemometer model VMS-3000-FSJT-NPNR
-      readHmp60();      // Read temperature/relative humidity sensor
+      //readHmp60();      // Read temperature/relative humidity sensor
+      readVeml7700();    // Read solar radiation
       readDFRWindSensor();  // Read Anemometer DFR Wind Sensor (DFRobot - CAL) Yh last in read, gives time for the module to settle comfortably      
       //read5103L();    // Read anemometer
       //disable12V();     // Disable 12V power  -- moved after dara transmit
