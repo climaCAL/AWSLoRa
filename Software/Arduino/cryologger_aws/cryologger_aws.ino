@@ -70,6 +70,7 @@
 // ----------------------------------------------------------------------------
 #define BME280_ADR1 0x77    // Second address for the BME280 - Used for the outside sensor.
 #define BME280_ADR2 0x76    // Second address for the BME280 - Used for the inside sensor.
+#define WIND_SENSOR_SLAVE_ADDR 0x66  //WindSensor module I2C address declaration
 
 // ----------------------------------------------------------------------------
 // Debugging macros
@@ -152,8 +153,7 @@
 #define SERIAL_PORT   Serial
 #define GNSS_PORT     Serial1
 
-//WindSensor module I2C address declaration:
-const uint16_t WIND_SENSOR_SLAVE_ADDR = 0x66;
+
 
 //Yh-031823-#define IRIDIUM_PORT  Serial2
 
@@ -198,8 +198,8 @@ Statistic vStats;               // Wind north-south wind vector component (v)
 // ----------------------------------------------------------------------------
 // User defined global variable declarations
 // ----------------------------------------------------------------------------
-unsigned long sampleInterval    = 5;  //Yh was:5   // Sampling interval (minutes). Default: 5 min (300 seconds)
-unsigned int  averageInterval   = 1; //Yh was:12    // Number of samples to be averaged in each message. Default: 12 (hourly)
+unsigned long sampleInterval    = 1;  // Sampling interval (minutes). 1 data/minute
+unsigned int  averageInterval   = 5;  // Number of samples to be averaged in each message. 5 minutes average
 unsigned int  transmitInterval  = 1;      // Number of messages in each Iridium transmission (340-byte limit)
 unsigned int  retransmitLimit   = 1;      // Failed data transmission reattempts (340-byte limit)
 unsigned int  gnssTimeout       = 120;    // Timeout for GNSS signal acquisition (seconds)
@@ -432,9 +432,12 @@ void setup()
   {
     petDog(); // Reset WDT
     //calibrateAdc();
-    read5103L();
-    readHmp60();
-    myDelay(500);
+    //readBme280(1);     // Read sensor (external one)
+    //readBme280(0);
+    //readLsm303();
+    //readVeml7700();    // Read solar radiation
+    readDFRWindSensor(); 
+    myDelay(5000);
   }
 #endif
 
