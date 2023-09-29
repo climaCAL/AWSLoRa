@@ -71,6 +71,7 @@
 #define BME280_ADR1 0x77    // Second address for the BME280 - Used for the outside sensor.
 #define BME280_ADR2 0x76    // Second address for the BME280 - Used for the inside sensor.
 #define WIND_SENSOR_SLAVE_ADDR 0x66  //WindSensor module I2C address declaration
+#define vemlI2cAddr 0x10  // According to datasheet page 6 (https://www.vishay.com/docs/84286/veml7700.pdf)
 
 // ----------------------------------------------------------------------------
 // Debugging macros
@@ -103,24 +104,24 @@
 // ----------------------------------------------------------------------------
 // Pin definitions
 // ----------------------------------------------------------------------------
-#define PIN_VBAT            A0
-#define PIN_WIND_SPEED      A1
-#define PIN_WIND_DIR        A2
-#define PIN_HUMID           A3
-#define PIN_TEMP            A4
-#define PIN_GNSS_EN         A5
-#define PIN_MICROSD_CS      9   //Yh confirmedOk - april-may2023 - Was:4 on adaloger
-#define PIN_12V_EN          5   // 12 V step-up/down regulator
-#define PIN_5V_EN           6   // 5V step-down regulator
-#define PIN_LED_GREEN       10 //Was:8   // Green LED
+#define PIN_VBAT            A0  // readBattery()
+#define PIN_WIND_SPEED      A1  // read7911()
+#define PIN_WIND_DIR        A2  // read7911()
+#define PIN_HUMID           A3  // readHmp60()
+#define PIN_TEMP            A4  // readHmp60()
+#define PIN_GNSS_EN         A5  // enableGnssPower() and disableGnssPower()
+#define PIN_MICROSD_CS      9   // Yh confirmedOk - april-may2023 - Was:4 on adaloger
+#define PIN_12V_EN          5   // 12 V step-up/down regulator enable12V() and disable12V()
+#define PIN_5V_EN           6   // 5V step-down regulator  enable5V() and disable5V()
+#define PIN_LED_GREEN       10  //Was:8 on adalogger - unused w/ LoRa   // Green LED
 //#define PIN_IRIDIUM_RX      10  // Pin 1 RXD (Yellow)
 //#define PIN_IRIDIUM_TX      11  // Pin 6 TXD (Orange)
 //#define PIN_IRIDIUM_SLEEP   12  // Pin 7 OnOff (Grey)
 #define PIN_LED_RED         13
 
 // Unused
-#define PIN_SOLAR           14
-#define PIN_SENSOR_PWR      14
+#define PIN_SOLAR           14  // readSp212()
+#define PIN_SENSOR_PWR      14  // read7911()
 
 //RFM95 - LoRa module
 //PMOD-RFM95: CS=10, RST=11, INT/DIO0=12
@@ -168,12 +169,13 @@
 // ----------------------------------------------------------------------------
 Adafruit_BME280                 bme280;
 Adafruit_LSM303_Accel_Unified   lsm303 = Adafruit_LSM303_Accel_Unified(54321); // I2C address: 0x1E
+Adafruit_VEML7700               veml = Adafruit_VEML7700(); // High Accuracy Ambient Light Sensor
 //Yh-031823-IridiumSBD                      modem(IRIDIUM_PORT, PIN_IRIDIUM_SLEEP);
 RTCZero                         rtc;
 SdFs                            sd;           // File system object
 FsFile                          logFile;      // Log file
 TinyGPSPlus                     gnss;
-sensirion                       sht(20, 21);  // (data, clock). Pull-up required on data pin
+// sensirion                       sht(20, 21);  // (data, clock). Pull-up required on data pin -- commented out by Yh on 09/28/23
 
 // Custom TinyGPS objects to store fix and validity information
 // Note: $GPGGA and $GPRMC sentences produced by GPS receivers (PA6H module)
@@ -425,18 +427,20 @@ void setup()
   printLine();
 
 #if CALIBRATE
-  enable5V();   // Enable 5V power
   enable12V();  // Enable 12V power
+  myDelay(400);
+  enable5V();   // Enable 5V power
+  myDelay(400);
 
   while (true)
   {
     petDog(); // Reset WDT
-    //calibrateAdc();
-    //readBme280(1);     // Read sensor (external one)
-    //readBme280(0);
-    //readLsm303();
-    //readVeml7700();    // Read solar radiation
-    readDFRWindSensor(); 
+    calibrateAdc();
+    readBme280(1);     // Read sensor (external one)
+    readBme280(0);
+    readLsm303();
+    readVeml7700();    // Read solar radiation - Attention (09/28/23 Yh) si le VEML7700 n'est pas connecté, le code bloque... corrigé. Cause: le destructeur. Donc déclaré global.
+    readDFRWindSensor();
     myDelay(5000);
   }
 #endif
@@ -530,8 +534,11 @@ void loop()
       cutoffCounter = 0;
 
       // Perform measurements
-      enable5V();       // Enable 5V power
-      enable12V();      // Enable 12V power
+      enable12V();       // Enable 5V power
+      myDelay(400);     // power settle time
+      enable5V();      // Enable 12V power
+      myDelay(400);     // power settle time
+
       readBme280(1);     // Read sensor (external one)
       readBme280(0);     // Read second bme (internal one)
       readLsm303();     // Read accelerometer
@@ -598,8 +605,8 @@ void loop()
       // Set the RTC alarm
       setRtcAlarm();
 
-      disable12V();     // Disable 12V power
       disable5V();      // Disable 5V power
+      disable12V();     // Disable 12V power
 
       DEBUG_PRINTLN("Info - Entering deep sleep...");
       DEBUG_PRINTLN();

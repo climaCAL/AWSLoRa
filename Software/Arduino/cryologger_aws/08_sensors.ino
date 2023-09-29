@@ -36,20 +36,24 @@ void configureBme280(uint8_t devID)
     uint8_t devAddr = 0x77;
     if (devID == 0) devAddr = 0x76;
 
-  //  if (scanI2CbusFor(0x76)) -- TBV if this works
-    if (bme280.begin(devAddr))
-    {
-      online.bme280[devID] = true;
-      DEBUG_PRINTLN("success!");
-      retCode = true;
+    if (scanI2CbusFor(devAddr)) {  // -- TBV if this works
+      if (bme280.begin(devAddr))
+      {
+        DEBUG_PRINTLN("success!");
+        retCode = true;
+      }
+      if (!retCode) {
+        DEBUG_PRINTLN("failed!");
+      }
+    } else {
+      DEBUG_PRINT("bme280 init: no answer from id 0x");
+      DEBUG_PRINTLN_HEX(devAddr);
     }
-    if (!retCode) {
-      online.bme280[devID] = false;
-      DEBUG_PRINTLN("failed!");
-    }
+    online.bme280[devID] = retCode;
   } else {
     DEBUG_PRINTLN("bme280 init: wrong devID!");
   }
+    
 
 }
 
@@ -122,35 +126,42 @@ void readBme280(uint8_t devID)
 }
 
 // ----------------------------------------------------------------------------
-// Adafruit VEML7700 Lux Meter -- Basé sur le BME280
+// Adafruit VEML7700 Lux Meter
 // ----------------------------------------------------------------------------
 void configureVEML7700(Adafruit_VEML7700 &veml)
 {
-  DEBUG_PRINT("Info - Initializing BME280...");
+  bool retCode = false;
+
+  DEBUG_PRINT("Info - Initializing VEML7700...");
   
-  if (veml.begin())
-  {
-    online.veml7700 = true;
-    DEBUG_PRINTLN("success!");
-    /*
-    veml.setGain(VEML7700_GAIN_2);
-    veml.setIntegrationTime(VEML7700_IT_200MS);
-    */
+  if (scanI2CbusFor(vemlI2cAddr)) {
+    if (veml.begin())
+    {
+      DEBUG_PRINTLN("success!");
+      retCode = true;
+      /*
+      veml.setGain(VEML7700_GAIN_2);
+      veml.setIntegrationTime(VEML7700_IT_200MS);
+      */
+    }
+    else
+    {
+      DEBUG_PRINTLN("failed!");
+    }
+  } else  {
+    DEBUG_PRINT("VEML7700 init: no answer from id 0x");
+    DEBUG_PRINTLN_HEX(vemlI2cAddr);
   }
-  else
-  {
-    online.veml7700 = false;
-    DEBUG_PRINTLN("failed!");
-  }
+
+  online.veml7700 = retCode;
+
 }
 
-// Read BME280
+// Read VEML7700 (solar)
 void readVeml7700()
 {
   // Start the loop timer
   unsigned long loopStartTime = millis();
-
-  Adafruit_VEML7700 veml = Adafruit_VEML7700();
    
   // Initialize sensor
   configureVEML7700(veml);
@@ -181,6 +192,7 @@ void readVeml7700()
   {
     DEBUG_PRINTLN("Warning - VEML7700 offline!");
   }
+
   // Stop the loop timer
   timer.readVeml7700 = millis() - loopStartTime;
 }
@@ -195,7 +207,7 @@ void readVeml7700()
 // White     SCK      Clock
 // Blue      SDA      Data
 // ----------------------------------------------------------------------------
-void readSht31()
+/*void readSht31()
 {
   // Start the loop timer
   unsigned long loopStartTime = millis();
@@ -226,6 +238,7 @@ void readSht31()
   // Stop the loop timer
   timer.readSht31 = millis() - loopStartTime;
 }
+*/
 
 // ----------------------------------------------------------------------------
 // Adafruit LSM303AGR Accelerometer/Magnetomter
