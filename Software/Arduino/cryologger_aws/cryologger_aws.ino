@@ -427,9 +427,9 @@ void setup()
   printLine();
 
 #if CALIBRATE
-  enable12V();  // Enable 12V power
+  enable5V();  // Enable 12V power
   myDelay(400);
-  enable5V();   // Enable 5V power
+  enable12V();   // Enable 5V power
   myDelay(400);
 
   while (true)
@@ -534,9 +534,9 @@ void loop()
       cutoffCounter = 0;
 
       // Perform measurements
-      enable12V();       // Enable 5V power
+      enable5V();       // Enable 5V power
       myDelay(400);     // power settle time
-      enable5V();      // Enable 12V power
+      enable12V();      // Enable 12V power
       myDelay(400);     // power settle time
 
       readBme280(1);     // Read sensor (external one)
@@ -605,8 +605,9 @@ void loop()
       // Set the RTC alarm
       setRtcAlarm();
 
-      disable5V();      // Disable 5V power
-      disable12V();     // Disable 12V power
+      disable12V();      // Disable 5V power
+      myDelay(400);
+      disable5V();     // Disable 12V power
 
       DEBUG_PRINTLN("Info - Entering deep sleep...");
       DEBUG_PRINTLN();
