@@ -38,6 +38,35 @@ void readGnss()
 #endif
       if (gnss.encode(c))
       {
+        #if DEBUG_GNSS
+        DEBUG_PRINT("> gnssFix.value() = ");    printTab(1);  DEBUG_PRINTLN(gnssFix.value());
+        DEBUG_PRINT("> gnssFix.age() = ");    printTab(1);  DEBUG_PRINTLN(gnssFix.age());
+        DEBUG_PRINT("> gnssValidity.value() = ");    printTab(1);  DEBUG_PRINTLN(gnssValidity.value());
+        DEBUG_PRINT("> gnssValidity.age() = ");    printTab(1);  DEBUG_PRINTLN(gnssValidity.age());
+        DEBUG_PRINT("> gnss.satellites.value() = ");    printTab(1);  DEBUG_PRINTLN(gnss.satellites.value());
+        DEBUG_PRINT("> fixCounter = ");    printTab(1);  DEBUG_PRINTLN(fixCounter);
+        /* Yh 20 mars 2023 - À débugger:
+          Ca bloque ici...
+            > gnssFix.value() = 	
+            > gnssFix.age() = 	4294967295
+            > gnssValidity.value() = 	
+            > gnssValidity.age() = 	4294967295
+            > gnss.satellites.value() = 	7
+            > fixCounter = 	0
+
+          Pourtant on a:
+            $GPRMC,024940.000,A,4525.7663,N,07336.0716,W,0.50,195.50,200323,,,A*79
+            $GPGGA,024941.000,4525.7665,N,07336.0717,W,1,06,1.38,30.5,M,-32.0,M,,*66
+            $GPRMC,024941.000,A,4525.7665,N,07336.0717,W,0.36,193.81,200323,,,A*75
+            $GPGGA,024942.000,4525.7663,N,07336.0714,W,1,06,1.38,30.5,M,-32.0,M,,*60
+            $GPRMC,024942.000,A,4525.7663,N,07336.0714,W,0.25,184.28,200323,,,A*74
+
+          Trouvé: prblm de config:
+            TinyGPSCustom gnssFix(gnss, "GNGGA", 6); // Fix quality
+            TinyGPSCustom gnssValidity(gnss, "GNRMC", 2); // Validity
+            Faut changer GNGGA pour GPGGA  et  GNRMC pour GPRMC... osti!
+        */
+        #endif
         // Check if NMEA sentences have a valid fix and are not stale
         if ((gnssFix.value() > 0 && gnssFix.age() < 1000) &&
             (String(gnssValidity.value()) == "A" && gnssValidity.age() < 1000) &&
@@ -88,10 +117,10 @@ void readGnss()
             hdop = gnss.hdop.value();
 
             // Write data to buffer
-            moSbdMessage.latitude = gnss.location.lat() * 1000000;
-            moSbdMessage.longitude = gnss.location.lng() * 1000000;
-            moSbdMessage.satellites = gnss.satellites.value();
-            moSbdMessage.hdop = gnss.hdop.value();
+            LoRaMessage.latitude = gnss.location.lat() * 1000000;
+            LoRaMessage.longitude = gnss.location.lng() * 1000000;
+            LoRaMessage.satellites = gnss.satellites.value();
+            LoRaMessage.hdop = gnss.hdop.value();
 
             DEBUG_PRINT(F("Info - RTC drift ")); DEBUG_PRINT(rtcDrift); DEBUG_PRINTLN(F(" seconds"));
             blinkLed(PIN_LED_GREEN, 5, 100);
@@ -105,7 +134,7 @@ void readGnss()
     }
 
     // Call callback during acquisition of GNSS fix
-    ISBDCallback();
+//Yh-031823    ISBDCallback();
 
     // Exit function if no GNSS data is received after a specified duration
     if ((millis() - loopStartTime) > 5000 && gnss.charsProcessed() < 10)

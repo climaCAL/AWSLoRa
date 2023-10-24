@@ -132,6 +132,10 @@ bool Adafruit_VEML7700::begin(TwoWire *theWire) {
   return true;
 }
 
+void Adafruit_VEML7700::end(void) {
+  this->~Adafruit_VEML7700();
+}
+
 /*!
  *    @brief Read the calibrated lux value. See app note lux table on page 5
  *    @param method Lux comptation method to use. One of

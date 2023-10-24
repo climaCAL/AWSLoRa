@@ -6,13 +6,15 @@
 
     Description:
     - Code configured for automatic weather stations to be deployed in Igloolik, Nunavut.
+    - Code modified and adapted by Yh for LoRa data transmission at CEGEP André-Laurendeau, AWS project
 
     Components:
-    - Rock7 RockBLOCK 9603
-    - Maxtena M1621HCT-P-SMA antenna (optional)
+    - (Yh removed) Rock7 RockBLOCK 9603
+    - (Yh removed) Maxtena M1621HCT-P-SMA antenna (optional)
     - Adafruit Feather M0 Adalogger
+    - (Yh new) RFM95 - Lora Module OR Adafruit M0 LoRa
     - Adafruit Ultimate GPS Featherwing
-    - Adafruit BME280 Temperature Humidity Pressure Sensor
+    - Adafruit BME280 Temperature Humidity Pressure Sensor  x2: internal and external
     - Adafruit LSM303AGR Accelerometer/Magnetomter
     - Pololu 3.3V 600mA Step-Down Voltage Regulator D36V6F3
     - Pololu 5V 600mA Step-Down Voltage Regulator D36V6F5
@@ -22,10 +24,14 @@
     Sensors:
     - RM Young 05103L Wind Monitor
     - Vaisala HMP60 Humidity and Temperature Probe
+    - (Yh added support) VMS3000 Anemometer
+    - (CAL added support) RS485 Wind Speed Transmitter (SEN0483) : https://wiki.dfrobot.com/RS485_Wind_Speed_Transmitter_SKU_SEN0483
+    - (CAL added support) RS485 Wind Direction Transmitter (SEN0482): https://wiki.dfrobot.com/RS485_Wind_Direction_Transmitter_SKU_SEN0482
+    - (CAL added support) VEML
 
     Comments:
-    - Sketch uses 98720 bytes (37%) of program storage space. Maximum is 262144 bytes.
-    - Power consumption in deep sleep is ~625 uA at 12.5V
+    - (asof 08/30/2023: Sketch uses 94936 bytes (36%) of program storage space. Maximum is 262144 bytes.)
+    - Yh:TBV ... Power consumption in deep sleep is ~625 uA at 12.5V
 
 */
 
@@ -37,7 +43,8 @@
 #include <Adafruit_Sensor.h>        // https://github.com/adafruit/Adafruit_Sensor (v1.1.4)
 #include <Arduino.h>                // Required for new Serial instance. Include before <wiring_private.h>
 #include <ArduinoLowPower.h>        // https://github.com/arduino-libraries/ArduinoLowPower (v1.2.2)
-#include <IridiumSBD.h>             // https://github.com/sparkfun/SparkFun_IridiumSBD_I2C_Arduino_Library (v3.0.5)
+//Yh-031823-#include <IridiumSBD.h>             // https://github.com/sparkfun/SparkFun_IridiumSBD_I2C_Arduino_Library (v3.0.5)
+#include <LoRa.h>
 #include <RTCZero.h>                // https://github.com/arduino-libraries/RTCZero (v1.6.0)
 #include <SdFat.h>                  // https://github.com/greiman/SdFat (v2.1.2)
 #include <sensirion.h>              // https://github.com/HydroSense/sensirion
@@ -46,12 +53,12 @@
 #include <TinyGPS++.h>              // https://github.com/mikalhart/TinyGPSPlus (v1.0.3)
 #include <Wire.h>                   // https://www.arduino.cc/en/Reference/Wire
 #include <wiring_private.h>         // Required for creating new Serial instance
-#include "Adafruit_VEML7700.h"      // Add docs
+#include "Adafruit_VEML7700.h"      // https://github.com/adafruit/Adafruit_VEML7700  (Be careful: see CAL modified)
 
 // ----------------------------------------------------------------------------
 // Define unique identifier
 // ----------------------------------------------------------------------------
-#define CRYOLOGGER_ID "AL1"
+#define CRYOLOGGER_ID "CAL"
 
 // ----------------------------------------------------------------------------
 // Data logging
@@ -61,15 +68,19 @@
 // ----------------------------------------------------------------------------
 // Define modifed addresses
 // ----------------------------------------------------------------------------
-#define BME280_ADR2 0x76    // Second addresse for the BME280 - Used for the interiror sensor.
+#define BME280_ADR1 0x77    // Second address for the BME280 - Used for the outside sensor.
+#define BME280_ADR2 0x76    // Second address for the BME280 - Used for the inside sensor.
+#define WIND_SENSOR_SLAVE_ADDR 0x66  //WindSensor module I2C address declaration
+#define vemlI2cAddr 0x10  // According to datasheet page 6 (https://www.vishay.com/docs/84286/veml7700.pdf)
 
 // ----------------------------------------------------------------------------
 // Debugging macros
 // ----------------------------------------------------------------------------
-#define DEBUG           true  // Output debug messages to Serial Monitor
+#define DEBUG           true   // Output debug messages to Serial Monitor
 #define DEBUG_GNSS      false  // Output GNSS debug information
 #define DEBUG_IRIDIUM   false  // Output Iridium debug messages to Serial Monitor
-#define CALIBRATE       false // Enable sensor calibration code
+#define CALIBRATE       false  // Enable sensor calibration code
+#define DEBUG_LORA      false   // Output LoRa messages to SM 
 
 #if DEBUG
 #define DEBUG_PRINT(x)            SERIAL_PORT.print(x)
@@ -93,60 +104,78 @@
 // ----------------------------------------------------------------------------
 // Pin definitions
 // ----------------------------------------------------------------------------
-#define PIN_VBAT            A0
-#define PIN_WIND_SPEED      A1
-#define PIN_WIND_DIR        A2
-#define PIN_HUMID           A3
-#define PIN_TEMP            A4
-#define PIN_GNSS_EN         A5
-#define PIN_MICROSD_CS      4
-#define PIN_12V_EN          5   // 12 V step-up/down regulator
-#define PIN_5V_EN           6   // 5V step-down regulator
-#define PIN_LED_GREEN       8   // Green LED
-#define PIN_IRIDIUM_RX      10  // Pin 1 RXD (Yellow)
-#define PIN_IRIDIUM_TX      11  // Pin 6 TXD (Orange)
-#define PIN_IRIDIUM_SLEEP   12  // Pin 7 OnOff (Grey)
+#define PIN_VBAT            A0  // readBattery()
+#define PIN_WIND_SPEED      A1  // read7911()
+#define PIN_WIND_DIR        A2  // read7911()
+#define PIN_HUMID           A3  // readHmp60()
+#define PIN_TEMP            A4  // readHmp60()
+#define PIN_GNSS_EN         A5  // enableGnssPower() and disableGnssPower()
+#define PIN_MICROSD_CS      9   // Yh confirmedOk - april-may2023 - Was:4 on adaloger
+#define PIN_12V_EN          5   // 12 V step-up/down regulator enable12V() and disable12V()
+#define PIN_5V_EN           6   // 5V step-down regulator  enable5V() and disable5V()
+#define PIN_LED_GREEN       10  //Was:8 on adalogger - unused w/ LoRa   // Green LED
+//#define PIN_IRIDIUM_RX      10  // Pin 1 RXD (Yellow)
+//#define PIN_IRIDIUM_TX      11  // Pin 6 TXD (Orange)
+//#define PIN_IRIDIUM_SLEEP   12  // Pin 7 OnOff (Grey)
 #define PIN_LED_RED         13
 
 // Unused
-#define PIN_SOLAR           7
-#define PIN_SENSOR_PWR      7
-#define PIN_RFM95_CS        7   // LoRa "B"
-#define PIN_RFM95_RST       7   // LoRa "A"
-#define PIN_RFM95_INT       7   // LoRa "D"
+#define PIN_SOLAR           14  // readSp212()
+#define PIN_SENSOR_PWR      14  // read7911()
+
+//RFM95 - LoRa module
+//PMOD-RFM95: CS=10, RST=11, INT/DIO0=12
+//AdaRFM95: CS=8, RST=4, INT/DIO0=7
+#define PIN_RFM95_CS        8 //marked as D10, PA18
+#define PIN_RFM95_RST       4  //marked as D11, PA16
+#define PIN_RFM95_INT       7  //marked as D12, PA19
+#define PIN_RFM95_DIO0      7  //Same as INT
+// Remaining pins are std to M0: MOSI(23), MISO(22), CLK(24)
+
+// ----------------------------------------------------------------------------
+// RFM95W radio definitions
+// ----------------------------------------------------------------------------
+#define RF95_FREQ     902700000UL   // Radio frequency (MHz)
+#define RF95_PW       20      // Transmit power (dBm)
+#define RF95_SF       10       // Spreading factor
+#define RF95_BW       125000UL  // Bandwidth (MHz)
+#define RF95_CR       5       // Coding rate
+#define RF95_CRC      true    // Cyclic Redundancy Check (CRC)
+#define LoRasyncWord  0xAA    // Kinda data "scrambler"
+
 
 // ------------------------------------------------------------------------------------------------
 // Port configuration
 // ------------------------------------------------------------------------------------------------
 // Create a new UART instance and assign it to pins 10 (RX) and 11 (TX).
 // For more information see: https://www.arduino.cc/en/Tutorial/SamdSercom
-Uart Serial2 (&sercom1, PIN_IRIDIUM_RX, PIN_IRIDIUM_TX, SERCOM_RX_PAD_2, UART_TX_PAD_0);
+//Yh-031823-Uart Serial2 (&sercom1, PIN_IRIDIUM_RX, PIN_IRIDIUM_TX, SERCOM_RX_PAD_2, UART_TX_PAD_0);
 
 #define SERIAL_PORT   Serial
 #define GNSS_PORT     Serial1
-#define IRIDIUM_PORT  Serial2
 
-//WindSensor module I2C address declaration:
-const uint16_t WIND_SENSOR_SLAVE_ADDR = 0x66;
+
+
+//Yh-031823-#define IRIDIUM_PORT  Serial2
 
 // Attach interrupt handler to SERCOM for new Serial instance
-void SERCOM1_Handler()
-{
-  Serial2.IrqHandler();
-}
+//Yh-031823-void SERCOM1_Handler()
+//Yh-031823-{
+//Yh-031823-  Serial2.IrqHandler();
+//Yh-031823-}
 
 // ----------------------------------------------------------------------------
 // Object instantiations
 // ----------------------------------------------------------------------------
 Adafruit_BME280                 bme280;
-//Adafruit_VEML7700               veml = Adafruit_VEML7700(); //Création de l'objet pour la classe du capteur de luminosité. --> Called in the read function.
 Adafruit_LSM303_Accel_Unified   lsm303 = Adafruit_LSM303_Accel_Unified(54321); // I2C address: 0x1E
-IridiumSBD                      modem(IRIDIUM_PORT, PIN_IRIDIUM_SLEEP);
+Adafruit_VEML7700               veml = Adafruit_VEML7700(); // High Accuracy Ambient Light Sensor
+//Yh-031823-IridiumSBD                      modem(IRIDIUM_PORT, PIN_IRIDIUM_SLEEP);
 RTCZero                         rtc;
 SdFs                            sd;           // File system object
 FsFile                          logFile;      // Log file
 TinyGPSPlus                     gnss;
-sensirion                       sht(20, 21);  // (data, clock). Pull-up required on data pin
+// sensirion                       sht(20, 21);  // (data, clock). Pull-up required on data pin -- commented out by Yh on 09/28/23
 
 // Custom TinyGPS objects to store fix and validity information
 // Note: $GPGGA and $GPRMC sentences produced by GPS receivers (PA6H module)
@@ -157,30 +186,29 @@ TinyGPSCustom gnssValidity(gnss, "GPRMC", 2); // Validity
 // ----------------------------------------------------------------------------
 // Statistics objects
 // ----------------------------------------------------------------------------
-typedef statistic::Statistic<float,uint32_t,false> StatisticCAL;
-StatisticCAL batteryStats;         // Battery voltage
-StatisticCAL temperatureIntStats;  // Internal temperature
-StatisticCAL humidityIntStats;     // Internal humidity
-StatisticCAL pressureIntStats;     // Internal pressure
-StatisticCAL temperatureExtStats;  // External temperature
-StatisticCAL humidityExtStats;     // External humidity
-StatisticCAL solarStats;           // Solar radiation
-StatisticCAL windSpeedStats;       // Wind speed
-StatisticCAL uStats;               // Wind east-west wind vector component (u)
-StatisticCAL vStats;               // Wind north-south wind vector component (v)
+Statistic batteryStats;         // Battery voltage
+Statistic temperatureIntStats;  // Internal temperature
+Statistic humidityIntStats;     // Internal humidity
+Statistic pressureIntStats;     // Internal pressure
+Statistic temperatureExtStats;  // External temperature
+Statistic humidityExtStats;     // External humidity
+Statistic solarStats;           // Solar radiation
+Statistic windSpeedStats;       // Wind speed
+Statistic uStats;               // Wind east-west wind vector component (u)
+Statistic vStats;               // Wind north-south wind vector component (v)
 
 // ----------------------------------------------------------------------------
 // User defined global variable declarations
 // ----------------------------------------------------------------------------
-unsigned long sampleInterval    = 5;      // Sampling interval (minutes). Default: 5 min (300 seconds)
-unsigned int  averageInterval   = 12;     // Number of samples to be averaged in each message. Default: 12 (hourly)
+unsigned long sampleInterval    = 1;  // Sampling interval (minutes). 1 data/minute
+unsigned int  averageInterval   = 5;  // Number of samples to be averaged in each message. 5 minutes average
 unsigned int  transmitInterval  = 1;      // Number of messages in each Iridium transmission (340-byte limit)
-unsigned int  retransmitLimit   = 4;      // Failed data transmission reattempts (340-byte limit)
+unsigned int  retransmitLimit   = 1;      // Failed data transmission reattempts (340-byte limit)
 unsigned int  gnssTimeout       = 120;    // Timeout for GNSS signal acquisition (seconds)
 unsigned int  iridiumTimeout    = 180;    // Timeout for Iridium transmission (seconds)
 bool          firstTimeFlag     = true;   // Flag to determine if program is running for the first time
 float         batteryCutoff     = 11.0;    // Battery voltage cutoff threshold (V)
-byte          loggingMode       = 2;      // Flag for new log file creation. 1: daily, 2: monthly, 3: yearly
+byte          loggingMode       = 1;  //Yh was:2    // Flag for new log file creation. 1: daily, 2: monthly, 3: yearly
 
 // ----------------------------------------------------------------------------
 // Sensors correction factor and offsets -- to modify -- 
@@ -200,6 +228,7 @@ float humBmeINT_Offset          = 0.0;      // Offset for interior humidity acqu
 //VEML7700
 float veml_CF                   = 15.172;   // Correction factor for light intensity acquisition.
 float veml_Offset               = -998;     // Offset for light intensity acquisition.
+
 // ----------------------------------------------------------------------------
 // Global variable declarations
 // ----------------------------------------------------------------------------
@@ -208,19 +237,22 @@ volatile bool wdtFlag           = false;  // Flag for Watchdog Timer interrupt s
 volatile int  wdtCounter        = 0;      // Watchdog Timer interrupt counter
 volatile int  revolutions       = 0;      // Wind speed ISR counter
 bool          resetFlag         = false;  // Flag to force system reset using Watchdog Timer
-uint8_t       moSbdBuffer[340];           // Buffer for Mobile Originated SBD (MO-SBD) message (340 bytes max)
-uint8_t       mtSbdBuffer[270];           // Buffer for Mobile Terminated SBD (MT-SBD) message (270 bytes max)
-size_t        moSbdBufferSize;
-size_t        mtSbdBufferSize;
+//uint8_t       moSbdBuffer[340];           // Buffer for Mobile Originated SBD (MO-SBD) message (340 bytes max)
+//uint8_t       mtSbdBuffer[270];           // Buffer for Mobile Terminated SBD (MT-SBD) message (270 bytes max)
+//size_t        moSbdBufferSize;
+//size_t        mtSbdBufferSize;
 char          logFileName[30]   = "";     // Log file name
 char          dateTime[30]      = "";     // Datetime buffer
 byte          retransmitCounter = 0;      // Counter for Iridium 9603 transmission reattempts
 byte          transmitCounter   = 0;      // Counter for Iridium 9603 transmission intervals
+unsigned long LoRaTimeOnAir     = 0;      // LoRa Time On Air measurement
+unsigned long ToAStart          = 0;      // start timer for LoRa ToA measurement
 byte          currentLogFile    = 0;      // Variable for tracking when new microSD log files are created
 byte          newLogFile        = 0;      // Variable for tracking when new microSD log files are created
 byte          currentDate       = 0;      // Variable for tracking when the date changes
 byte          newDate           = 0;      // Variable for tracking when the date changes
 int           transmitStatus    = 0;      // Iridium transmission status code
+bool          LoRaTransmitCompleted = false;
 unsigned int  iterationCounter  = 0;      // Counter for program iterations (zero indicates a reset)
 unsigned int  failureCounter    = 0;      // Counter of consecutive failed Iridium transmission attempts
 unsigned long previousMillis    = 0;      // Global millis() timer
@@ -263,23 +295,32 @@ typedef struct {
 }vent;
 
 // Union to store Iridium Short Burst Data (SBD) Mobile Originated (MO) messages
+// Yh 031823 - replaced moSbdMessage for LoRaMessage
+
+const byte localAddress = 0x01;     // address of this device
+const byte destination = 0xF1;      // destination to send to (gateway, repeater)
+const byte currentSupportedFrameVersion = 0x05;  //AWS cryologger
+
 typedef union
 {
   struct
   {
+    uint8_t   frameVersion;       // version de la trame            (1 byte)
+    uint8_t   recipient;          // recipient address              (1 byte)
+    uint8_t   sender;             // local address                  (1 byte)
     uint32_t  unixtime;           // UNIX Epoch time                (4 bytes)
     int16_t   temperatureInt;     // Internal temperature (°C)      (2 bytes)   * 100
     uint16_t  humidityInt;        // Internal humidity (%)          (2 bytes)   * 100
     uint16_t  pressureInt;        // Internal pressure (hPa)        (2 bytes)   - 850 * 100
     int16_t   temperatureExt;     // External temperature (°C)      (2 bytes)   * 100
-    uint16_t  humidityExt;        // External humidity (%)          (2 bytes)   * 100
+    uint16_t  humidityExt;        // External humidity (%)          (2 bytes)   * 10
     int16_t   pitch;              // Pitch (°)                      (2 bytes)   * 100
     int16_t   roll;               // Roll (°)                       (2 bytes)   * 100
-    uint32_t  solar;              // Solar illuminance (Lux)        (4 bytes)   * 10
+    uint16_t  solar;              // Solar irradiance (W m-2)       (2 bytes)   // CAREFUL: AWSSat=32b*100 vs AWSLoRa=16b*1
     uint16_t  windSpeed;          // Mean wind speed (m/s)          (2 bytes)   * 100
-    uint16_t  windDirection;      // Mean wind direction (°)        (2 bytes)	* 10
+    uint16_t  windDirection;      // Mean wind direction (°)        (2 bytes)
     uint16_t  windGustSpeed;      // Wind gust speed (m/s)          (2 bytes)   * 100
-    uint16_t  windGustDirection;  // Wind gust direction (°)        (2 bytes)	* 10
+    uint16_t  windGustDirection;  // Wind gust direction (°)        (2 bytes)
     int32_t   latitude;           // Latitude (DD)                  (4 bytes)   * 1000000
     int32_t   longitude;          // Longitude (DD)                 (4 bytes)   * 1000000
     uint8_t   satellites;         // # of satellites                (1 byte)
@@ -288,38 +329,40 @@ typedef union
     uint16_t  transmitDuration;   // Previous transmission duration (2 bytes)
     uint8_t   transmitStatus;     // Iridium return code            (1 byte)
     uint16_t  iterationCounter;   // Message counter                (2 bytes)
-  } __attribute__((packed));                                    // Total: (48 bytes)
-  uint8_t bytes[48];
-} SBD_MO_MESSAGE;
+  } __attribute__((packed));                                    // Total: (47 bytes)
+  uint8_t bytes[49];
+} LORA_MESSAGE;
 
-SBD_MO_MESSAGE moSbdMessage;
+LORA_MESSAGE LoRaMessage;
 
+/* Yh 031823 - Not required with LoRa (not receiving)
 // Union to store received Iridium SBD Mobile Terminated (MT) message
 typedef union
 {
   struct
   {
-    uint8_t   sampleInterval;     // 1 byte
+    uint8_t   sampleInterval;     // 2 bytes
     uint8_t   averageInterval;    // 1 byte
     uint8_t   transmitInterval;   // 1 byte
     uint8_t   retransmitLimit;    // 1 byte
-    uint8_t   batteryCutoff;      // 1 byte
+    uint8_t   batteryCutoff;      // 1 bytes
     uint8_t   resetFlag;          // 1 byte
   };
-  uint8_t bytes[6]; // Size of message to be received in bytes
+  uint8_t bytes[7]; // Size of message to be received in bytes
 } SBD_MT_MESSAGE;
 
 SBD_MT_MESSAGE mtSbdMessage;
+*/
 
 // Structure to store device online/offline states
 struct struct_online
 {
-  bool bme280   = false;
-  bool bme280Int = false;
+  bool bme280[2]   = {false, false};
   bool veml7700 = false;
   bool lsm303   = false;
   bool gnss     = false;
   bool microSd  = false;
+  bool lora     = false;
 } online;
 
 // Structure to store function timers
@@ -334,13 +377,16 @@ struct struct_timer
   unsigned long readVeml7700;
   unsigned long readLsm303;
   unsigned long readHmp60;
-  unsigned long readSht31;
+  unsigned long readSht31;  
+  unsigned long readDFRWS;  //Yh-0504 - New: readDFRWindSensor
+  unsigned long readVMS3K;  //Yh-0508 - New: readVMS3000 wind sensor
   unsigned long read5103L;
   unsigned long read7911;
-  unsigned long readDFRWS;
   unsigned long readSp212;
-  unsigned long iridium;
+  unsigned long iridium;  //Yh-031823-not req
+  unsigned long lora;  //Yh-031823-new
 } timer;
+
 
 // ----------------------------------------------------------------------------
 // Setup
@@ -381,16 +427,21 @@ void setup()
   printLine();
 
 #if CALIBRATE
-  enable5V();   // Enable 5V power
-  enable12V();  // Enable 12V power
+  enable5V();  // Enable 12V power
+  myDelay(400);
+  enable12V();   // Enable 5V power
+  myDelay(400);
 
   while (true)
   {
     petDog(); // Reset WDT
-    //calibrateAdc();
-    read5103L();
-    readHmp60();
-    myDelay(500);
+    calibrateAdc();
+    readBme280(1);     // Read sensor (external one)
+    readBme280(0);
+    readLsm303();
+    readVeml7700();    // Read solar radiation - Attention (09/28/23 Yh) si le VEML7700 n'est pas connecté, le code bloque... corrigé. Cause: le destructeur. Donc déclaré global.
+    readDFRWindSensor();
+    myDelay(5000);
   }
 #endif
 
@@ -402,7 +453,8 @@ void setup()
   configureSd();        // Configure microSD
   printSettings();      // Print configuration settings
   readGnss();           // Sync RTC with GNSS
-  configureIridium();   // Configure Iridium 9603 transceiver
+//Yh-031823-  configureIridium();   // Configure Iridium 9603 transceiver
+  configureLoRa();      // Configure RFM95W radio
   createLogFile();      // Create initial log file
 
   // Close serial port if immediately entering deep sleep
@@ -483,21 +535,23 @@ void loop()
 
       // Perform measurements
       enable5V();       // Enable 5V power
+      myDelay(400);     // power settle time
       enable12V();      // Enable 12V power
-      readBme280();     // Read sensor
-      readBme280Int();
-      readLsm303();     // Read accelerometer
-      readVeml7700();
-      //readSp212();       // Read solar radiation
-      //readSht31();       // Read temperature/relative humidity sensor
-      //read7911();        // Read anemometer
-      //readHmp60();       // Read temperature/relative humidity sensor
-      //read5103L();       // Read anemometer
-      readDFRWindSensor(); // Read anemometer and windDirection
+      myDelay(400);     // power settle time
 
-// Moving those 2 AFTER transmit block.
-//      disable12V();      // Disable 12V power
-//      disable5V();       // Disable 5V power
+      readBme280(1);     // Read sensor (external one)
+      readBme280(0);     // Read second bme (internal one)
+      readLsm303();     // Read accelerometer
+      //readSp212();    // Read solar radiation
+      //readSht31();    // Read temperature/relative humidity sensor
+      //read7911();     // Read anemometer
+      //readVMS3000();  // Read Anemometer model VMS-3000-FSJT-NPNR
+      //readHmp60();      // Read temperature/relative humidity sensor
+      readVeml7700();    // Read solar radiation
+      readDFRWindSensor();  // Read Anemometer DFR Wind Sensor (DFRobot - CAL) Yh last in read, gives time for the module to settle comfortably      
+      //read5103L();    // Read anemometer
+      //disable12V();     // Disable 12V power  -- moved after dara transmit
+      //disable5V();      // Disable 5V power   -- moved after data transmit
 
       // Print summary of statistics
       printStats();
@@ -506,8 +560,8 @@ void loop()
       if ((sampleCounter == averageInterval) || firstTimeFlag)
       {
         calculateStats(); // Calculate statistics of variables to be transmitted
-        writeBuffer();    // Write data to transmit buffer
-
+//Yh-031823-        writeBuffer();    // Write data to transmit buffer
+        LoRaTransmitData();  //Yh 042923
         // Check if data transmission interval has been reached
         if ((transmitCounter == transmitInterval) || firstTimeFlag)
         {
@@ -520,8 +574,25 @@ void loop()
             Serial.print("currentDate: "); Serial.println(currentDate);
             Serial.print("newDate: "); Serial.println(newDate);
           }
-          transmitData(); // Transmit data via Iridium transceiver
+//Yh-031823-          transmitData(); // Transmit data via Iridium transceiver
         }
+        
+        // Yh 090 - Ok, since interrupt handling for LoRa does not work
+        //Wait for LoRa transmit to complete (max 1.5 sec):
+        //Note: Arduino-LoRa lib warns that onReceive and on onTxDone won't work on SAMD !!! Sh**!!
+        //According to https://iftnt.github.io/lora-air-time/index.html estimated air time is 534ms
+        //uint32_t loRaTimer = millis();
+        //const uint32_t loRaDelay = 1500;
+        //while (!LoRaTransmitCompleted && ((millis() - loRaTimer)<loRaDelay))
+        //  myDelay(400);
+
+        //if (millis() - loRaTimer>loRaDelay) DEBUG_PRINTLN("Warn - LoRa transmit exceeded"); else DEBUG_PRINTLN("Info - LoRa transmit OK");
+        LoRaTransmitCompleted = false;  //Reset flag for next iteration
+
+        // Put modem to sleep
+        DEBUG_PRINTLN("Info - Putting LoRa module to sleep...");
+        LoRa.sleep();
+        
         sampleCounter = 0; // Reset sample counter
       }
 
@@ -534,9 +605,9 @@ void loop()
       // Set the RTC alarm
       setRtcAlarm();
 
-      //Ok, we're done, let's shutdown things
-      disable12V();      // Disable 12V power
-      disable5V();       // Disable 5V power
+      disable12V();      // Disable 5V power
+      myDelay(400);
+      disable5V();     // Disable 12V power
 
       DEBUG_PRINTLN("Info - Entering deep sleep...");
       DEBUG_PRINTLN();
@@ -557,3 +628,5 @@ void loop()
   // Enter deep sleep and wait for WDT or RTC alarm interrupt
   goToSleep();
 }
+
+

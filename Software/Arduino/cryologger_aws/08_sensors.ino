@@ -1,160 +1,167 @@
 // ----------------------------------------------------------------------------
-// Adafruit BME280 Temperature Humidity Pressure Sensor -- Adressage par défaut pour le BME280 externe Adr = 0x77
-// Pression non-ajouté
+// Utility function to detect I2C sensor lockup 
+// ----------------------------------------------------------------------------
+bool scanI2CbusFor(uint8_t lookForAddress) {
+  bool retCode = false;
+  Wire.beginTransmission(lookForAddress);
+  uint8_t error = Wire.endTransmission();
+  if (error == 0) {   /*if I2C device found*/
+    // Serial.print("I2C device found at address 0x");/*print this line if I2C device found*/
+    // if (lookForAddress<16) {
+    //   Serial.print("0");
+    // }
+    // Serial.println(lookForAddress,HEX);
+    retCode = true;
+  }
+  return retCode;
+}
+
+// ----------------------------------------------------------------------------
+// Adafruit BME280 Temperature Humidity Pressure Sensor
 // https://www.adafruit.com/product/2652
 // ----------------------------------------------------------------------------
-void configureBme280()
+void configureBme280(uint8_t devID)
 {
-  DEBUG_PRINT("Info - Initializing BME280 Ext...");
+  DEBUG_PRINT("Info - Initializing BME280 ("+String(devID)+")...");
 
-  if (bme280.begin())
-  {
-    online.bme280 = true;
-    DEBUG_PRINTLN("success!");
+  // Yh 031823 - May I suggest to "ping" expected/defaut device I2C address first in order to test presence? Then try begin.
+  
+  // Ok, on 031923 - Stuck here, at the "begin"...!!!  hangging ... until WDT force restart
+
+  bool retCode = false;
+
+  if (devID < 2) {
+
+    //Set bme280 device's address, default is 0x77
+    uint8_t devAddr = 0x77;
+    if (devID == 0) devAddr = 0x76;
+
+    if (scanI2CbusFor(devAddr)) {  // -- TBV if this works
+      if (bme280.begin(devAddr))
+      {
+        DEBUG_PRINTLN("success!");
+        retCode = true;
+      }
+      if (!retCode) {
+        DEBUG_PRINTLN("failed!");
+      }
+    } else {
+      DEBUG_PRINT("bme280 init: no answer from id 0x");
+      DEBUG_PRINTLN_HEX(devAddr);
+    }
+    online.bme280[devID] = retCode;
+  } else {
+    DEBUG_PRINTLN("bme280 init: wrong devID!");
   }
-  else
-  {
-    online.bme280 = false;
-    DEBUG_PRINTLN("failed!");
-  }
+    
+
 }
 
 // Read BME280
-void readBme280()
+void readBme280(uint8_t devID)
 {
   // Start the loop timer
   unsigned long loopStartTime = millis();
 
-  // Initialize sensor
-  configureBme280();
+  if (devID == 0 || devID == 1) {
 
-  // Check if sensor initialized successfully
-  if (online.bme280)
-  {
-    DEBUG_PRINT("Info - Reading BME280 Ext...");
+    // Initialize sensor
+    configureBme280(devID);
 
-    myDelay(250);
+    // Check if sensor initialized successfully
+    if (online.bme280[devID])  {
+      DEBUG_PRINT("Info - Reading BME280 ("+String(devID)+")...");
 
-    // Read sensor data
-    temperatureExt = tempBmeEXT_CF * bme280.readTemperature() + tempBmeEXT_Offset;
-    uint16_t humExt = humBmeEXT_CF * bme280.readHumidity() + humBmeEXT_Offset;
+      myDelay(250);
 
-    if (humExt >= 100){
-      humidityExt = 100;
+      // Read sensor data
+      if (devID == 1) {  // AKA as the external one
+        temperatureExt  = tempBmeEXT_CF * bme280.readTemperature() + tempBmeEXT_Offset;
+        uint16_t humExt = humBmeEXT_CF * bme280.readHumidity() + humBmeEXT_Offset;
+
+        if (humExt >= 100) {
+          humidityExt = 100;
+        } else {
+          humidityExt = humExt;
+        }
+        
+        // Add to statistics object
+        temperatureExtStats.add(temperatureExt );
+        humidityExtStats.add(humidityExt);
+        DEBUG_PRINT("\tTemperatureExt: "); DEBUG_PRINT(temperatureExt); DEBUG_PRINTLN(" C");
+        DEBUG_PRINT("\tHumidityExt: "); DEBUG_PRINT(humidityExt); DEBUG_PRINTLN("%");
+      }
+      if (devID == 0) {  // AKA as the internal one
+        // Read sensor data
+        temperatureInt = tempImeINT_CF * bme280.readTemperature() + tempBmeINT_Offset ;
+        uint16_t humInt =  humImeINT_CF * bme280.readHumidity() + humBmeINT_Offset; // no need of correction
+        pressureInt = bme280.readPressure() / 100.0F;
+
+        if (humInt >= 100) {
+          humidityInt = 100;
+        } else {
+          humidityInt = humInt;
+        }
+
+        // Add to statistics object
+        temperatureIntStats.add(temperatureInt);
+        humidityIntStats.add(humidityInt);
+        pressureIntStats.add(pressureInt);
+
+        DEBUG_PRINT("\tTemperatureInt: "); DEBUG_PRINT(temperatureInt); DEBUG_PRINTLN(" C");
+        DEBUG_PRINT("\tHumidityInt: "); DEBUG_PRINT(humidityInt); DEBUG_PRINTLN("%");
+        DEBUG_PRINT("\tPressure(Int): "); DEBUG_PRINT(pressureInt); DEBUG_PRINTLN(" kPa");
+      }
+      DEBUG_PRINTLN("done.");
     }
-    else{
-      humidityExt = humExt;
+    else
+    {
+      DEBUG_PRINTLN("Warning - BME280 offline!");
     }
-    //pressureExt = bme280.readPressure() / 100.0F;
-
-    // Add to statistics object
-    temperatureExtStats.add(temperatureExt);
-    humidityExtStats.add(humidityExt);
-    //pressureExtStats.add(pressureExt);
-
-    DEBUG_PRINTLN("done.");
-  }
-  else
-  {
-    DEBUG_PRINTLN("Warning - BME280 Ext offline!");
+  } else {
+    DEBUG_PRINTLN("ERROR - bme280 read: wrong devID!");
   }
   // Stop the loop timer
   timer.readBme280 = millis() - loopStartTime;
 }
 
 // ----------------------------------------------------------------------------
-// Adafruit BME280 Temperature Humidity Pressure Sensor -- Second adressage pour le BME280 interne adr = 0x76
-// https://www.adafruit.com/product/2652
-// ----------------------------------------------------------------------------
-void configureBme280Int()
-{
-  DEBUG_PRINT("Info - Initializing BME280 int...");
-
-  if (bme280.begin(BME280_ADR2))
-  {
-    online.bme280Int = true;
-    DEBUG_PRINTLN("success!");
-  }
-  else
-  {
-    online.bme280Int = false;
-    DEBUG_PRINTLN("failed!");
-  }
-}
-
-// Read BME280
-void readBme280Int()
-{
-  // Start the loop timer
-  unsigned long loopStartTime = millis();
-
-  // Initialize sensor
-  configureBme280Int();
-
-  // Check if sensor initialized successfully
-  if (online.bme280Int)
-  {
-    DEBUG_PRINT("Info - Reading BME280 Int...");
-
-    myDelay(250);
-
-    // Read sensor data
-    temperatureInt = tempImeINT_CF * bme280.readTemperature() + tempBmeINT_Offset ;
-    uint16_t humInt =  humImeINT_CF * bme280.readHumidity() + humBmeINT_Offset; // no need of correction
-    pressureInt = bme280.readPressure() / 100.0F;
-
-    if (humInt >= 100){
-      humidityInt = 100;
-    }
-    else{
-      humidityInt = humInt;
-    }
-
-    // Add to statistics object
-    temperatureIntStats.add(temperatureInt);
-    humidityIntStats.add(humidityInt);
-    pressureIntStats.add(pressureInt);
-
-    DEBUG_PRINTLN("done.");
-  }
-  else
-  {
-    DEBUG_PRINTLN("Warning - BME280 int offline!");
-  }
-  // Stop the loop timer
-  timer.readBme280 = millis() - loopStartTime;
-}
-
-// ----------------------------------------------------------------------------
-// Adafruit VEML7700 Lux Meter -- Basé sur le BME280
+// Adafruit VEML7700 Lux Meter
 // ----------------------------------------------------------------------------
 void configureVEML7700(Adafruit_VEML7700 &veml)
 {
-  DEBUG_PRINT("Info - Initializing BME280...");
+  bool retCode = false;
+
+  DEBUG_PRINT("Info - Initializing VEML7700...");
   
-  if (veml.begin())
-  {
-    online.veml7700 = true;
-    DEBUG_PRINTLN("success!");
-    /*
-    veml.setGain(VEML7700_GAIN_2);
-    veml.setIntegrationTime(VEML7700_IT_200MS);
-    */
+  if (scanI2CbusFor(vemlI2cAddr)) {
+    if (veml.begin())
+    {
+      DEBUG_PRINTLN("success!");
+      retCode = true;
+      /*
+      veml.setGain(VEML7700_GAIN_2);
+      veml.setIntegrationTime(VEML7700_IT_200MS);
+      */
+    }
+    else
+    {
+      DEBUG_PRINTLN("failed!");
+    }
+  } else  {
+    DEBUG_PRINT("VEML7700 init: no answer from id 0x");
+    DEBUG_PRINTLN_HEX(vemlI2cAddr);
   }
-  else
-  {
-    online.veml7700 = false;
-    DEBUG_PRINTLN("failed!");
-  }
+
+  online.veml7700 = retCode;
+
 }
 
-// Read BME280
+// Read VEML7700 (solar)
 void readVeml7700()
 {
   // Start the loop timer
   unsigned long loopStartTime = millis();
-
-  Adafruit_VEML7700 veml = Adafruit_VEML7700();
    
   // Initialize sensor
   configureVEML7700(veml);
@@ -169,25 +176,26 @@ void readVeml7700()
 // Add acquisition
   int32_t soleil = veml_CF * veml.readLux() + veml_Offset; // Default = VEML_LUX_NORMAL
   
-  if(soleil <= 0){
+  if(soleil <= 0) {
     solar = 0;
-  }
-  else{
+  } else {
     solar = soleil;
   }
 
   solarStats.add(solar);
-  
+
+  DEBUG_PRINT("\tSolar: "); DEBUG_PRINT(solar); DEBUG_PRINTLN(" Lux");
+    
     DEBUG_PRINTLN("done.");
   }
   else
   {
     DEBUG_PRINTLN("Warning - VEML7700 offline!");
   }
+
   // Stop the loop timer
   timer.readVeml7700 = millis() - loopStartTime;
 }
-
 
 // ----------------------------------------------------------------------------
 // Davis Instruments Temperature Humidity Sensor (Sensiron SHT31-LSS)
@@ -199,7 +207,7 @@ void readVeml7700()
 // White     SCK      Clock
 // Blue      SDA      Data
 // ----------------------------------------------------------------------------
-void readSht31()
+/*void readSht31()
 {
   // Start the loop timer
   unsigned long loopStartTime = millis();
@@ -230,6 +238,7 @@ void readSht31()
   // Stop the loop timer
   timer.readSht31 = millis() - loopStartTime;
 }
+*/
 
 // ----------------------------------------------------------------------------
 // Adafruit LSM303AGR Accelerometer/Magnetomter
@@ -239,6 +248,7 @@ void configureLsm303()
 {
   DEBUG_PRINT("Info - Initializing LSM303...");
 
+   // Yh 031823 - May I suggest to "ping" expected/defaut device I2C address first in order to test presence? Then try begin.
 
   // Initialize LSM303 accelerometer
   if (lsm303.begin())
@@ -294,8 +304,8 @@ void readLsm303()
     roll = atan2(yAvg, xAvg) * 180 / PI;
 
     // Write data to union
-    moSbdMessage.pitch = pitch * 100;
-    moSbdMessage.roll = roll * 100;
+    LoRaMessage.pitch = pitch * 100;
+    LoRaMessage.roll = roll * 100;
 
     // Add to statistics object
     //pitchStats.add();
@@ -328,7 +338,6 @@ void readLsm303()
 // Black      A4      CH2: Temperature (0 - 2.5V)
 // Shield     GND     Earth ground
 // ----------------------------------------------------------------------------
-
 void readHmp60()
 {
   // Start loop timer
@@ -379,7 +388,6 @@ void readHmp60()
 // Black     GND        Ground (from sensor signal and output power)
 // Clear     GND        Shield/Ground
 // ----------------------------------------------------------------------------
-
 void readSp212()
 {
   // Start loop timer
@@ -467,8 +475,8 @@ void read5103L()
   float v = -1.0 * windSpeed * cos(windDirectionRadians);   // Magnitude of north-south component (v) of vector winds
 
   // Write data to union
-  moSbdMessage.windGustSpeed = windGustSpeed * 100;
-  moSbdMessage.windGustDirection = windGustDirection * 10;
+  LoRaMessage.windGustSpeed = windGustSpeed * 100;
+  LoRaMessage.windGustDirection = windGustDirection * 10;
 
   // Add to wind statistics
   windSpeedStats.add(windSpeed);
@@ -557,8 +565,8 @@ void read7911()
   float v = -1.0 * windSpeed * cos(windDirectionRadians);   // Magnitude of north-south component (v) of vector winds
 
   // Write data to union
-  moSbdMessage.windGustSpeed = windGustSpeed * 100;
-  moSbdMessage.windGustDirection = windGustDirection * 10;
+  LoRaMessage.windGustSpeed = windGustSpeed * 100;
+  LoRaMessage.windGustDirection = windGustDirection * 10;
 
   // Add to wind statistics
   windSpeedStats.add(windSpeed);
@@ -614,20 +622,20 @@ void readDFRWindSensor()
   // Start the loop timer
   unsigned long loopStartTime = millis();
 
-  DEBUG_PRINT("Info - Reading DFRWindSensor...");
-  myDelay(2000); //Let the DFRWindSensor settle a bit... making sure data is accurate at the sensor and ready for us.
+  DEBUG_PRINTLN("Info - Reading DFRWindSensor... sensor settle time of 2sec");
 
   // Requires I2C bus
   Wire.begin();
-  myDelay(1000);
+  myDelay(2000);
 
-  vent lectureVent;  //Let's use a structure to read wind sensor.
+  vent lectureVent;
 
   byte len = Wire.requestFrom(WIND_SENSOR_SLAVE_ADDR,0x06);  //Requesting 6 bytes from slave
+
   if (len != 0) {
     while (Wire.available() > 0) {
       for(int i = 0; i < 6; i++) {
-        lectureVent.regMemoryMap[i] = Wire.read(); 
+        lectureVent.regMemoryMap[i] = Wire.read();
       }
     }
     lectureVent.angleVentFloat = ((lectureVent.regMemoryMap[0] << 8) + lectureVent.regMemoryMap[1])/10.0;
@@ -636,7 +644,11 @@ void readDFRWindSensor()
 
     windDirection = lectureVent.angleVentFloat;
     windDirectionSector = lectureVent.directionVentInt;
-    windSpeed = lectureVent.vitesseVentFloat;   
+    windSpeed = lectureVent.vitesseVentFloat;
+
+    char smallMsg[48]={0};  //Temps buffer
+    sprintf(smallMsg,"%x %x %x %x %x %x",lectureVent.regMemoryMap[0],lectureVent.regMemoryMap[1],lectureVent.regMemoryMap[2],lectureVent.regMemoryMap[3],lectureVent.regMemoryMap[4],lectureVent.regMemoryMap[5]);
+    DEBUG_PRINT(F("\t*RAW* readings: ")); DEBUG_PRINTLN(smallMsg);
     
   } else {
     windDirection = 0.0;
@@ -657,9 +669,9 @@ void readDFRWindSensor()
     windGustDirection = windDirection;
   }
 
-  // Write data to union
-  moSbdMessage.windSpeed = windSpeed * 100;
-  moSbdMessage.windDirection = windDirection;
+  // Write data to union (LoRa)
+  LoRaMessage.windSpeed = windSpeed * 100;
+  LoRaMessage.windDirection = windDirection;
 
   // Calculate wind speed and direction vectors
   // http://tornado.sfsu.edu/geosciences/classes/m430/Wind/WindDirection.html
@@ -668,29 +680,107 @@ void readDFRWindSensor()
   float v = -1.0 * windSpeed * cos(windDirectionRadians);   // Magnitude of north-south component (v) of vector winds
 
   // Write data to union
-  moSbdMessage.windGustSpeed = windGustSpeed * 100;
-  moSbdMessage.windGustDirection = windGustDirection * 10;
-
+  LoRaMessage.windGustSpeed = windGustSpeed * 100;
+  LoRaMessage.windGustDirection = windGustDirection*10; 
+  
   // Add to wind statistics
   windSpeedStats.add(windSpeed);
   uStats.add(u);
   vStats.add(v);
 
   // Print debug info
-  DEBUG_PRINT(F("Wind Speed: ")); DEBUG_PRINTLN(windSpeed);
-  DEBUG_PRINT(F("Wind Direction: ")); DEBUG_PRINTLN(windDirection);
-  DEBUG_PRINT(F("Wind Dir. Sector: ")); DEBUG_PRINTLN(windDirectionSector);
+  DEBUG_PRINT(F("\tWind Speed: ")); DEBUG_PRINTLN(windSpeed);
+  DEBUG_PRINT(F("\tWind Direction: ")); DEBUG_PRINTLN(windDirection);
+  DEBUG_PRINT(F("\tWind Dir. Sector: ")); DEBUG_PRINTLN(windDirectionSector);
 
     // Stop the loop timer
   timer.readDFRWS = millis() - loopStartTime;
 }
 
+// ----------------------------------------------------------------------------
+// Anemometer model VMS-3000-FSJT-NPNR
+// reference: https://www.makerfabs.com/wiki/index.php?title=Anemometer
+// ----------------------------------------------------------------------------
+void readVMS3000()  
+{
+  uint32_t loopStartTime = millis();
+
+  DEBUG_PRINTLN("Info - Reading VMS3000...");
+
+  // Configure pin mode
+  pinMode(PIN_WIND_SPEED, INPUT);
+
+  // Attach interrupt to wind speed input pin
+  attachInterrupt(PIN_WIND_SPEED, windSpeedIsr, FALLING);
+  revolutions = 0;
+
+  //Yh: 1er mai 23: Pourquoi ne pas utiliser myDelay(3000); à la place? 
+  //  cela éviterais le risque avec le WDT, non?
+
+  // Measure wind speed for 3 seconds
+  // while (millis() < loopStartTime + 3000);
+  // {
+  //   // Do nothing
+  // }
+
+  //DEBUG_PRINTLN("capturing..."+String(millis()/1000));
+  myDelay(3000);   //Yh 0805 - works!
+  //DEBUG_PRINTLN("... done! "+String(millis()/1000));
+
+  // Detach interrupt from wind speed input pin
+  detachInterrupt(PIN_WIND_SPEED);
+
+  // Calculate wind speed according to Davis Instruments formula: V = P(1.75/T)
+  // V = speed in miles per hour
+  // P = no. of pulses in sample period
+  // T = duration of sample period in seconds
+  windSpeed = revolutions * 1.75/20.0;   // Calculate wind speed in metres per second
+
+  if (windSpeed == 0)
+  {
+    windDirection = 0.0;
+  }
+
+    // Check and update wind gust speed and direction
+  if ((windSpeed > 0) && (windSpeed > windGustSpeed))
+  {
+    windGustSpeed = windSpeed;
+    windGustDirection = windDirection;
+  }
+
+  // Calculate wind speed and direction vectors
+  // http://tornado.sfsu.edu/geosciences/classes/m430/Wind/WindDirection.html
+  float windDirectionRadians = windDirection * DEG_TO_RAD;  // Convert wind direction from degrees to radians
+  float u = -1.0 * windSpeed * sin(windDirectionRadians);   // Magnitude of east-west component (u) of vector winds
+  float v = -1.0 * windSpeed * cos(windDirectionRadians);   // Magnitude of north-south component (v) of vector winds
+
+  // Write data to union
+  LoRaMessage.windGustSpeed = windGustSpeed * 100;
+  LoRaMessage.windGustDirection = windGustDirection * 10;
+
+  // Add to wind statistics
+  windSpeedStats.add(windSpeed);
+  uStats.add(u);
+  vStats.add(v);
+
+  // Write data to union
+  LoRaMessage.windSpeed = windSpeed * 100;
+  LoRaMessage.windDirection = 1;  //NA with VMS3000 alone, but required? Yh 0805(may)
+
+  // Print debug info
+  DEBUG_PRINT(F("Wind Speed: ")); DEBUG_PRINTLN(windSpeed);
+  //DEBUG_PRINT(F("Wind Direction: ")); DEBUG_PRINTLN(windDirection);
+
+  // Stop loop timer
+  timer.readVMS3K = millis() - loopStartTime;
+}
 
 // Interrupt service routine (ISR) for wind speed measurement
 // for Davis Instruments 7911 anemometer
 void windSpeedIsr()
 {
-  revolutions++;
+  if ( digitalRead(PIN_WIND_SPEED) == LOW )
+    revolutions++;
 }
 
 // Calculate mean wind speed and direction from vector components
@@ -721,8 +811,8 @@ void windVectors()
     rvWindDirection = 0;
 
   // Write data to union
-  moSbdMessage.windSpeed = rvWindSpeed * 100;         // Resultant mean wind speed (m/s)
-  moSbdMessage.windDirection = rvWindDirection * 10;  // Resultant mean wind direction (°)
+  LoRaMessage.windSpeed = rvWindSpeed * 100;         // Resultant mean wind speed (m/s)
+  LoRaMessage.windDirection = rvWindDirection * 10;  // Resultant mean wind direction (°)
 }
 
 // ----------------------------------------------------------------------------
