@@ -68,6 +68,7 @@
 // ----------------------------------------------------------------------------
 // Define modifed addresses
 // ----------------------------------------------------------------------------
+enum BME_PERIPH_ID {BMEINT,BMEEXT};
 #define BME280_ADR1 0x77    // Second address for the BME280 - Used for the outside sensor.
 #define BME280_ADR2 0x76    // Second address for the BME280 - Used for the inside sensor.
 #define WIND_SENSOR_SLAVE_ADDR 0x66  //WindSensor module I2C address declaration
@@ -79,7 +80,7 @@
 #define DEBUG           true   // Output debug messages to Serial Monitor
 #define DEBUG_GNSS      false  // Output GNSS debug information
 #define DEBUG_IRIDIUM   false  // Output Iridium debug messages to Serial Monitor
-#define CALIBRATE       false  // Enable sensor calibration code
+#define CALIBRATE       true  // Enable sensor calibration code
 #define DEBUG_LORA      false   // Output LoRa messages to SM 
 
 #if DEBUG
@@ -214,14 +215,14 @@ byte          loggingMode       = 1;  //Yh was:2    // Flag for new log file cre
 // Sensors correction factor and offsets -- to modify -- 
 // ----------------------------------------------------------------------------
 //BME280 -- Exterior sensor
-float tempBmeEXT_CF             = 1.046;    // Correction factor for exterior temperature acquisition.
-float tempBmeEXT_Offset         = -0.805;   // Offset for exterior temperature acquisition.
-float humBmeEXT_CF              = 1.09;     // Correction factor for exterior humidity acquisition.
-float humBmeEXT_Offset          = 2.3;      // Offset for exterior humidity acquisition.
+float tempBmeEXT_CF             = 1.00;    // Correction factor for exterior temperature acquisition.
+float tempBmeEXT_Offset         = 0.0;   // Offset for exterior temperature acquisition.
+float humBmeEXT_CF              = 1.0;     // Correction factor for exterior humidity acquisition.
+float humBmeEXT_Offset          = 0.0;      // Offset for exterior humidity acquisition.
 
 //BME280 -- Interior sensor
-float tempImeINT_CF             = 1.05;     // Correction factor for interior temperature acquisition.
-float tempBmeINT_Offset         = -1.07;    // Offset for interior temperature acquisition.
+float tempImeINT_CF             = 1.0;     // Correction factor for interior temperature acquisition.
+float tempBmeINT_Offset         = 0.0;    // Offset for interior temperature acquisition.
 float humImeINT_CF              = 1.0;      // Correction factor for interior humidity acquisition.
 float humBmeINT_Offset          = 0.0;      // Offset for interior humidity acquisition.
 
@@ -357,7 +358,7 @@ SBD_MT_MESSAGE mtSbdMessage;
 // Structure to store device online/offline states
 struct struct_online
 {
-  bool bme280[2]   = {false, false};
+  bool bme280[2]   = {false, false};  //Yh beware of el. count of enum BME_PERIPH_ID (actually 2 elements)
   bool veml7700 = false;
   bool lsm303   = false;
   bool gnss     = false;
@@ -436,11 +437,11 @@ void setup()
   {
     petDog(); // Reset WDT
     calibrateAdc();
-    readBme280(1);     // Read sensor (external one)
-    readBme280(0);
+    readBme280(BMEEXT);  //Yh pls refer above enum BME_PERIPH_ID
+    readBme280(BMEINT);
     readLsm303();
-    readVeml7700();    // Read solar radiation - Attention (09/28/23 Yh) si le VEML7700 n'est pas connecté, le code bloque... corrigé. Cause: le destructeur. Donc déclaré global.
-    readDFRWindSensor();
+//    readVeml7700();    // Read solar radiation - Attention (09/28/23 Yh) si le VEML7700 n'est pas connecté, le code bloque... corrigé. Cause: le destructeur. Donc déclaré global.
+//    readDFRWindSensor();
     myDelay(5000);
   }
 #endif
@@ -539,8 +540,8 @@ void loop()
       enable12V();      // Enable 12V power
       myDelay(400);     // power settle time
 
-      readBme280(1);     // Read sensor (external one)
-      readBme280(0);     // Read second bme (internal one)
+      readBme280(BMEEXT);     // Read sensor (external one)
+      readBme280(BMEINT);     // Read second bme (internal one)
       readLsm303();     // Read accelerometer
       //readSp212();    // Read solar radiation
       //readSht31();    // Read temperature/relative humidity sensor

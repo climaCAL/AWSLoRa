@@ -20,7 +20,7 @@ bool scanI2CbusFor(uint8_t lookForAddress) {
 // Adafruit BME280 Temperature Humidity Pressure Sensor
 // https://www.adafruit.com/product/2652
 // ----------------------------------------------------------------------------
-void configureBme280(uint8_t devID)
+void configureBme280(BME_PERIPH_ID devID)
 {
   DEBUG_PRINT("Info - Initializing BME280 ("+String(devID)+")...");
 
@@ -34,7 +34,7 @@ void configureBme280(uint8_t devID)
 
     //Set bme280 device's address, default is 0x77
     uint8_t devAddr = 0x77;
-    if (devID == 0) devAddr = 0x76;
+    if (devID == BMEEXT) devAddr = 0x76;
 
     if (scanI2CbusFor(devAddr)) {  // -- TBV if this works
       if (bme280.begin(devAddr))
@@ -58,12 +58,12 @@ void configureBme280(uint8_t devID)
 }
 
 // Read BME280
-void readBme280(uint8_t devID)
+void readBme280(BME_PERIPH_ID devID)
 {
   // Start the loop timer
   unsigned long loopStartTime = millis();
 
-  if (devID == 0 || devID == 1) {
+  if (devID == BMEEXT || devID == BMEINT) {
 
     // Initialize sensor
     configureBme280(devID);
@@ -75,7 +75,7 @@ void readBme280(uint8_t devID)
       myDelay(250);
 
       // Read sensor data
-      if (devID == 1) {  // AKA as the external one
+      if (devID == BMEEXT) {  // AKA as the external one
         temperatureExt  = tempBmeEXT_CF * bme280.readTemperature() + tempBmeEXT_Offset;
         uint16_t humExt = humBmeEXT_CF * bme280.readHumidity() + humBmeEXT_Offset;
 
@@ -88,10 +88,13 @@ void readBme280(uint8_t devID)
         // Add to statistics object
         temperatureExtStats.add(temperatureExt );
         humidityExtStats.add(humidityExt);
-        DEBUG_PRINT("\tTemperatureExt: "); DEBUG_PRINT(temperatureExt); DEBUG_PRINTLN(" C");
-        DEBUG_PRINT("\tHumidityExt: "); DEBUG_PRINT(humidityExt); DEBUG_PRINTLN("%");
+        #if CALIBRATE
+          DEBUG_PRINT("\tTemperatureExt: "); DEBUG_PRINT(temperatureExt); DEBUG_PRINTLN(" C");
+          DEBUG_PRINT("\tHumidityExt: "); DEBUG_PRINT(humidityExt); DEBUG_PRINTLN("%");
+        #endif
+
       }
-      if (devID == 0) {  // AKA as the internal one
+      if (devID == BMEINT) {  // AKA as the internal one
         // Read sensor data
         temperatureInt = tempImeINT_CF * bme280.readTemperature() + tempBmeINT_Offset ;
         uint16_t humInt =  humImeINT_CF * bme280.readHumidity() + humBmeINT_Offset; // no need of correction
@@ -108,9 +111,11 @@ void readBme280(uint8_t devID)
         humidityIntStats.add(humidityInt);
         pressureIntStats.add(pressureInt);
 
-        DEBUG_PRINT("\tTemperatureInt: "); DEBUG_PRINT(temperatureInt); DEBUG_PRINTLN(" C");
-        DEBUG_PRINT("\tHumidityInt: "); DEBUG_PRINT(humidityInt); DEBUG_PRINTLN("%");
-        DEBUG_PRINT("\tPressure(Int): "); DEBUG_PRINT(pressureInt); DEBUG_PRINTLN(" kPa");
+        #if CALIBRATE
+          DEBUG_PRINT("\tTemperatureInt: "); DEBUG_PRINT(temperatureInt); DEBUG_PRINTLN(" C");
+          DEBUG_PRINT("\tHumidityInt: "); DEBUG_PRINT(humidityInt); DEBUG_PRINTLN("%");
+          DEBUG_PRINT("\tPressure(Int): "); DEBUG_PRINT(pressureInt); DEBUG_PRINTLN(" kPa");
+        #endif
       }
       DEBUG_PRINTLN("done.");
     }
