@@ -24,17 +24,13 @@ void configureBme280(BME_PERIPH_ID devID)
 {
   DEBUG_PRINT("Info - Initializing BME280 ("+String(devID)+")...");
 
-  // Yh 031823 - May I suggest to "ping" expected/defaut device I2C address first in order to test presence? Then try begin.
-  
-  // Ok, on 031923 - Stuck here, at the "begin"...!!!  hangging ... until WDT force restart
-
   bool retCode = false;
 
   if (devID < 2) {
 
-    //Set bme280 device's address, default is 0x77
-    uint8_t devAddr = 0x77;
-    if (devID == BMEEXT) devAddr = 0x76;
+    //Set bme280 device's address, default is exterior (0x77)
+    uint8_t devAddr = BME280_EXT;
+    if (devID == BMEINT) devAddr = BME280_INT;
 
     if (scanI2CbusFor(devAddr)) {  // -- TBV if this works
       if (bme280.begin(devAddr))

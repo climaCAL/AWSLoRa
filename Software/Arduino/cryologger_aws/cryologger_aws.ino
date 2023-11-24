@@ -59,6 +59,7 @@
 // Define unique identifier
 // ----------------------------------------------------------------------------
 #define CRYOLOGGER_ID "CAL"
+#define __VERSION "2.1.1" //Yh as of 24Nov2023
 
 // ----------------------------------------------------------------------------
 // Data logging
@@ -68,9 +69,9 @@
 // ----------------------------------------------------------------------------
 // Define modifed addresses
 // ----------------------------------------------------------------------------
-enum BME_PERIPH_ID {BMEINT,BMEEXT};
-#define BME280_ADR1 0x77    // Second address for the BME280 - Used for the outside sensor.
-#define BME280_ADR2 0x76    // Second address for the BME280 - Used for the inside sensor.
+enum BME_PERIPH_ID {BMEINT=0,BMEEXT};
+#define BME280_EXT 0x77    // Second address for the BME280 - Used for the outside sensor.
+#define BME280_INT 0x76    // Second address for the BME280 - Used for the inside sensor.
 #define WIND_SENSOR_SLAVE_ADDR 0x66  //WindSensor module I2C address declaration
 #define vemlI2cAddr 0x10  // According to datasheet page 6 (https://www.vishay.com/docs/84286/veml7700.pdf)
 
@@ -80,7 +81,7 @@ enum BME_PERIPH_ID {BMEINT,BMEEXT};
 #define DEBUG           true   // Output debug messages to Serial Monitor
 #define DEBUG_GNSS      false  // Output GNSS debug information
 #define DEBUG_IRIDIUM   false  // Output Iridium debug messages to Serial Monitor
-#define CALIBRATE       true  // Enable sensor calibration code
+#define CALIBRATE       false  // Enable sensor calibration code
 #define DEBUG_LORA      false   // Output LoRa messages to SM 
 
 #if DEBUG
@@ -440,8 +441,8 @@ void setup()
     readBme280(BMEEXT);  //Yh pls refer above enum BME_PERIPH_ID
     readBme280(BMEINT);
     readLsm303();
-//    readVeml7700();    // Read solar radiation - Attention (09/28/23 Yh) si le VEML7700 n'est pas connecté, le code bloque... corrigé. Cause: le destructeur. Donc déclaré global.
-//    readDFRWindSensor();
+    readVeml7700();    // Read solar radiation - Attention (09/28/23 Yh) si le VEML7700 n'est pas connecté, le code bloque... corrigé. Cause: le destructeur. Donc déclaré global.
+    readDFRWindSensor();
     myDelay(5000);
   }
 #endif
