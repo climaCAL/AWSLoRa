@@ -27,7 +27,6 @@ void printSettings()
   DEBUG_PRINT("retransmitCounter: "); printTab(1);  DEBUG_PRINTLN(retransmitCounter);
   DEBUG_PRINT("retransmitLimit: ");   printTab(1);  DEBUG_PRINTLN(retransmitLimit);
   DEBUG_PRINT("gnssTimeout: ");       printTab(2);  DEBUG_PRINTLN(gnssTimeout);
-  DEBUG_PRINT("iridiumTimeout: ");    printTab(1);  DEBUG_PRINTLN(iridiumTimeout);
   DEBUG_PRINT("loggingMode: ");       printTab(2);  DEBUG_PRINTLN(loggingMode);
   DEBUG_PRINT("batteryCutoff: ");     printTab(2);  DEBUG_PRINTLN(batteryCutoff);
   DEBUG_PRINT("resetFlag: ");         printTab(2);  DEBUG_PRINTLN(resetFlag);
@@ -47,14 +46,11 @@ void printTimers()
   DEBUG_PRINT("writeMicroSd: ");    printTab(1);  DEBUG_PRINTLN(timer.writeMicroSd);
   DEBUG_PRINT("readBme280: ");      printTab(1);  DEBUG_PRINTLN(timer.readBme280);
   DEBUG_PRINT("readLsm303: ");      printTab(1);  DEBUG_PRINTLN(timer.readLsm303);
-  DEBUG_PRINT("readHmp60: ");       printTab(1);  DEBUG_PRINTLN(timer.readHmp60);
-  //DEBUG_PRINT("readSht31: ");       printTab(1);  DEBUG_PRINTLN(timer.readSht31);
-  DEBUG_PRINT("read5103L: ");       printTab(1);  DEBUG_PRINTLN(timer.read5103L);
-  //DEBUG_PRINT("readVMS3K: ");       printTab(1);  DEBUG_PRINTLN(timer.readVMS3K);
+  
   DEBUG_PRINT("readDFRWS: ");       printTab(1);  DEBUG_PRINTLN(timer.readDFRWS);
-  //DEBUG_PRINT("read7911: ");        printTab(1);  DEBUG_PRINTLN(timer.read7911);
+  
   DEBUG_PRINT("readGnss: ");        printTab(1);  DEBUG_PRINTLN(timer.readGnss);
-  DEBUG_PRINT("transmitData: ");    printTab(1);  DEBUG_PRINTLN(timer.iridium);
+  DEBUG_PRINT("transmitData: ");    printTab(1);  DEBUG_PRINTLN("0");
   DEBUG_PRINT("lora TX: ");         printTab(1);  DEBUG_PRINTLN(timer.lora);
   DEBUG_PRINT("freeRam(): ");       printTab(1);  DEBUG_PRINTLN(freeRam());
 
@@ -74,17 +70,17 @@ void printMoSbd()
   DEBUG_PRINT("pressureInt:");      printTab(2);  DEBUG_PRINTLN(LoRaMessage.pressureInt);
   DEBUG_PRINT("temperatureExt:");   printTab(2);  DEBUG_PRINTLN(LoRaMessage.temperatureExt);
   DEBUG_PRINT("humidityExt:");      printTab(2);  DEBUG_PRINTLN(LoRaMessage.humidityExt);
-  //DEBUG_PRINT("solar:");            printTab(3);  DEBUG_PRINTLN(LoRaMessage.solar);
+  DEBUG_PRINT("solar:");            printTab(3);  DEBUG_PRINTLN(LoRaMessage.solar);
   DEBUG_PRINT("pitch:");            printTab(3);  DEBUG_PRINTLN(LoRaMessage.pitch);
   DEBUG_PRINT("roll:");             printTab(3);  DEBUG_PRINTLN(LoRaMessage.roll);
   DEBUG_PRINT("windSpeed:");        printTab(2);  DEBUG_PRINTLN(LoRaMessage.windSpeed);
   DEBUG_PRINT("windDirection:");    printTab(2);  DEBUG_PRINTLN(LoRaMessage.windDirection);
   DEBUG_PRINT("windGustSpeed:");    printTab(2);  DEBUG_PRINTLN(LoRaMessage.windGustSpeed);
   DEBUG_PRINT("windGustDirection:");  printTab(1);  DEBUG_PRINTLN(LoRaMessage.windGustDirection);
-  //DEBUG_PRINT("latitude:");         printTab(2);  DEBUG_PRINTLN(LoRaMessage.latitude);
-  //DEBUG_PRINT("longitude:");        printTab(2);  DEBUG_PRINTLN(LoRaMessage.longitude);
-  //DEBUG_PRINT("satellites:");       printTab(2);  DEBUG_PRINTLN(LoRaMessage.satellites);
-  //DEBUG_PRINT("hdop:");             printTab(3);  DEBUG_PRINTLN(LoRaMessage.hdop);
+  DEBUG_PRINT("latitude:");         printTab(2);  DEBUG_PRINTLN(LoRaMessage.latitude);
+  DEBUG_PRINT("longitude:");        printTab(2);  DEBUG_PRINTLN(LoRaMessage.longitude);
+  DEBUG_PRINT("satellites:");       printTab(2);  DEBUG_PRINTLN(LoRaMessage.satellites);
+  DEBUG_PRINT("hdop:");             printTab(3);  DEBUG_PRINTLN(LoRaMessage.hdop);
   DEBUG_PRINT("voltage:");          printTab(2);  DEBUG_PRINTLN(LoRaMessage.voltage);
   DEBUG_PRINT("transmitDuration:"); printTab(1);  DEBUG_PRINTLN(LoRaMessage.transmitDuration);
   DEBUG_PRINT("transmitStatus:");   printTab(2);  DEBUG_PRINTLN(LoRaMessage.transmitStatus);
@@ -93,23 +89,6 @@ void printMoSbd()
   printLine();
 
 }
-
-// Print contents of union/structure storing Mobile Originated (MT) SBD message data
-/* Yh 031823 - No longer rquired with LoRa
-void printMtSbd()
-{
-  printLine();
-  DEBUG_PRINTLN("MT-SBD Message Data");
-  printLine();
-  DEBUG_PRINT("sampleInterval:");    printTab(2);  DEBUG_PRINTLN(mtSbdMessage.sampleInterval);
-  DEBUG_PRINT("averageInterval:");  printTab(1);  DEBUG_PRINTLN(mtSbdMessage.averageInterval);
-  DEBUG_PRINT("transmitInterval:"); printTab(1);  DEBUG_PRINTLN(mtSbdMessage.transmitInterval);
-  DEBUG_PRINT("retransmitLimit:");  printTab(1);  DEBUG_PRINTLN(mtSbdMessage.retransmitLimit);
-  DEBUG_PRINT("batteryCutoff:");    printTab(2);  DEBUG_PRINTLN(mtSbdMessage.batteryCutoff);
-  DEBUG_PRINT("resetFlag:");        printTab(2);  DEBUG_PRINTLN(mtSbdMessage.resetFlag);
-  printLine();
-}
-*/
 
 // Print contents of union/structure
 void printMoSbdHex()

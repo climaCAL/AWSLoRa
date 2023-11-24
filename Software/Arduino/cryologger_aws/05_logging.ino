@@ -93,11 +93,10 @@ void createLogFile()
 
   // Write header to file
   logFile.println("sample,datetime,voltage,temperature_int,humidity_int,pressure_int,temperature_ext,"
-                  "humidity_ext,pitch,roll,wind_speed,wind_direction,latitude,longitude,satellites,hdop,"
-                  "online_microSd,online_Bme280_0,online_Bme280_1,online_Lsm303,timer_readRtc,timer_readBattery,timer_configMicroSd,"
-                  "timer_readGnss,timer_bme280,timer_lsm303,timer_readHmp60,timer_read5103l,"
-                  "timer_iridium,transmit_status,rtc_drift,free_ram,"
-                  "sampleInterval,averageInterval,transmitInterval,retransmitLimit,gnssTimeout,iridiumTimeout");
+                  "humidity_ext,pitch,roll,wind_speed,wind_direction,solar,latitude,longitude,satellites,hdop,"
+                  "online_microSd,online_Bme280_I,online_Bme280_E,online_Lsm303,timer_readRtc,timer_readBattery,timer_configMicroSd,"
+                  "timer_readGnss,timer_bme280,timer_lsm303,transmit_status,rtc_drift,free_ram,"
+                  "sampleInterval,averageInterval,transmitInterval,retransmitLimit,gnssTimeout");
 
   // Close log file
   logFile.close();
@@ -169,7 +168,7 @@ void logData()
       logFile.print(roll);                logFile.print(",");
       logFile.print(windSpeed);           logFile.print(",");
       logFile.print(windDirection);       logFile.print(",");
-      //logFile.print(solar);               logFile.print(",");
+      logFile.print(solar);               logFile.print(",");
       logFile.print(latitude, 6);         logFile.print(",");
       logFile.print(longitude, 6);        logFile.print(",");
       logFile.print(satellites);          logFile.print(",");
@@ -177,8 +176,8 @@ void logData()
 
       // Online information
       logFile.print(online.microSd);      logFile.print(",");
-      logFile.print(online.bme280[0]);       logFile.print(",");
-      logFile.print(online.bme280[1]);       logFile.print(",");
+      logFile.print(online.bme280[BMEINT]);       logFile.print(",");
+      logFile.print(online.bme280[BMEEXT]);       logFile.print(",");
       logFile.print(online.lsm303);       logFile.print(",");
 
       // Timer information
@@ -188,10 +187,6 @@ void logData()
       logFile.print(timer.readGnss);      logFile.print(",");
       logFile.print(timer.readBme280);    logFile.print(",");
       logFile.print(timer.readLsm303);    logFile.print(",");
-      logFile.print(timer.readHmp60);     logFile.print(",");
-      logFile.print(timer.read5103L);     logFile.print(",");
-      //logFile.print(timer.readSp212);     logFile.print(",");
-      logFile.print(timer.iridium);       logFile.print(",");
 
       // Debugging information
       logFile.print(transmitStatus);      logFile.print(",");
@@ -204,7 +199,6 @@ void logData()
       logFile.print(transmitInterval);    logFile.print(",");
       logFile.print(retransmitLimit);     logFile.print(",");
       logFile.print(gnssTimeout);         logFile.print(",");
-      logFile.println(iridiumTimeout);      
 
       // Update file access timestamps
       updateFileAccess(&logFile);
@@ -246,8 +240,8 @@ void logData()
 
       // Online information
       DEBUG_PRINT(online.microSd);      DEBUG_PRINT(",");
-      DEBUG_PRINT(online.bme280[0]);       DEBUG_PRINT(",");
-      DEBUG_PRINT(online.bme280[1]);       DEBUG_PRINT(",");
+      DEBUG_PRINT(online.bme280[BMEINT]);       DEBUG_PRINT(",");
+      DEBUG_PRINT(online.bme280[BMEEXT]);       DEBUG_PRINT(",");
       DEBUG_PRINT(online.lsm303);       DEBUG_PRINT(",");
 
       // Timer information
@@ -257,23 +251,18 @@ void logData()
       DEBUG_PRINT(timer.readGnss);      DEBUG_PRINT(",");
       DEBUG_PRINT(timer.readBme280);    DEBUG_PRINT(",");
       DEBUG_PRINT(timer.readLsm303);    DEBUG_PRINT(",");
-      DEBUG_PRINT(timer.readHmp60);     DEBUG_PRINT(",");
-      DEBUG_PRINT(timer.read5103L);     DEBUG_PRINT(",");
-      //DEBUG_PRINT(timer.readSp212);     DEBUG_PRINT(",");
-      DEBUG_PRINT(timer.iridium);       DEBUG_PRINT(",");
 
       // Debugging information
       DEBUG_PRINT(transmitStatus);      DEBUG_PRINT(",");
       DEBUG_PRINT(rtcDrift);            DEBUG_PRINT(",");
-      DEBUG_PRINT(freeRam());
+      DEBUG_PRINT(freeRam());           DEBUG_PRINT(",");
 
       // Sampling information
       DEBUG_PRINT(sampleInterval);      DEBUG_PRINT(",");
       DEBUG_PRINT(averageInterval);     DEBUG_PRINT(",");
       DEBUG_PRINT(transmitInterval);    DEBUG_PRINT(",");
       DEBUG_PRINT(retransmitLimit);     DEBUG_PRINT(",");
-      DEBUG_PRINT(gnssTimeout);         DEBUG_PRINT(",");
-      DEBUG_PRINTLN(iridiumTimeout);
+      DEBUG_PRINT(gnssTimeout);
 #endif
       blinkLed(PIN_LED_GREEN, 2, 100);
     }
