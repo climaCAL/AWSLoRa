@@ -379,6 +379,10 @@ void setup()
   enable12V();   // Enable 5V power
   myDelay(400);
 
+//  configureRtc();       // Configure real-time clock (RTC)
+//  readRtc();
+  
+
   while (true)
   {
     petDog(); // Reset WDT
@@ -398,8 +402,14 @@ void setup()
     DEBUG_PRINT(">  (E) Fram before: ");  // Investigation du 28 nov 2023 - bug de memoryLeak
     DEBUG_PRINTLN(freeRam());  // Investigation du 28 nov 2023 - bug de memoryLeak
     readDFRWindSensor();
+//    DEBUG_PRINT(">  (F) Fram before: ");  // Investigation du 28 nov 2023 - bug de memoryLeak
+//    DEBUG_PRINTLN(freeRam());  // Investigation du 28 nov 2023 - bug de memoryLeak
+//    readGnss(); // Sync RTC with the GNSS
+//    readBattery();        // Read battery voltage
+
     DEBUG_PRINT(">  Fram after  : ");  // Investigation du 28 nov 2023 - bug de memoryLeak
     DEBUG_PRINTLN(freeRam());  // Investigation du 28 nov 2023 - bug de memoryLeak
+
     myDelay(5000);
   }
 #endif
