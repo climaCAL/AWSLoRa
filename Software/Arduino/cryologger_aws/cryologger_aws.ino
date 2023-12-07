@@ -65,8 +65,8 @@
 // Define modifed addresses
 // ----------------------------------------------------------------------------
 enum BME_PERIPH_ID {BMEINT=0,BMEEXT};
-#define BME280_EXT 0x77    // Second address for the BME280 - Used for the outside sensor.
-#define BME280_INT 0x76    // Second address for the BME280 - Used for the inside sensor.
+#define BME280_EXT BME280_ADDRESS            //defined in Adafruit Library = 0x77 - Used for the outside sensor.
+#define BME280_INT BME280_ADDRESS_ALTERNATE  //defined in Adafruit Library = 0x76 - Used for the inside sensor.
 #define WIND_SENSOR_SLAVE_ADDR 0x66  //WindSensor module I2C address declaration
 #define vemlI2cAddr 0x10  // According to datasheet page 6 (https://www.vishay.com/docs/84286/veml7700.pdf)
 
@@ -75,7 +75,7 @@ enum BME_PERIPH_ID {BMEINT=0,BMEEXT};
 // ----------------------------------------------------------------------------
 #define DEBUG           true   // Output debug messages to Serial Monitor
 #define DEBUG_GNSS      false  // Output GNSS debug information
-#define CALIBRATE       false  // Enable sensor calibration code
+#define CALIBRATE       true  // Enable sensor calibration code
 #define DEBUG_LORA      false   // Output LoRa messages to SM 
 
 #if DEBUG
@@ -149,7 +149,7 @@ enum BME_PERIPH_ID {BMEINT=0,BMEEXT};
 // ----------------------------------------------------------------------------
 // Object instantiations
 // ----------------------------------------------------------------------------
-Adafruit_BME280                 bme280;
+Adafruit_BME280                 *bme280 = NULL; //new Adafruit_BME280();
 Adafruit_LSM303_Accel_Unified   lsm303 = Adafruit_LSM303_Accel_Unified(54321); // I2C address: 0x1E
 Adafruit_VEML7700               veml = Adafruit_VEML7700(); // High Accuracy Ambient Light Sensor
 RTCZero                         rtc;
@@ -382,12 +382,24 @@ void setup()
   while (true)
   {
     petDog(); // Reset WDT
+    DEBUG_PRINT(">  (A) Fram before: ");  // Investigation du 28 nov 2023 - bug de memoryLeak
+    DEBUG_PRINTLN(freeRam());  // Investigation du 28 nov 2023 - bug de memoryLeak
     calibrateAdc();
     readBme280(BMEEXT);  //Yh pls refer above enum BME_PERIPH_ID
+    DEBUG_PRINT(">  (B) Fram before: ");  // Investigation du 28 nov 2023 - bug de memoryLeak
+    DEBUG_PRINTLN(freeRam());  // Investigation du 28 nov 2023 - bug de memoryLeak
     readBme280(BMEINT);
+    DEBUG_PRINT(">  (C) Fram before: ");  // Investigation du 28 nov 2023 - bug de memoryLeak
+    DEBUG_PRINTLN(freeRam());  // Investigation du 28 nov 2023 - bug de memoryLeak
     readLsm303();
+    DEBUG_PRINT(">  (D) Fram before: ");  // Investigation du 28 nov 2023 - bug de memoryLeak
+    DEBUG_PRINTLN(freeRam());  // Investigation du 28 nov 2023 - bug de memoryLeak
     readVeml7700();    // Read solar radiation - Attention (09/28/23 Yh) si le VEML7700 n'est pas connecté, le code bloque... corrigé. Cause: le destructeur. Donc déclaré global.
+    DEBUG_PRINT(">  (E) Fram before: ");  // Investigation du 28 nov 2023 - bug de memoryLeak
+    DEBUG_PRINTLN(freeRam());  // Investigation du 28 nov 2023 - bug de memoryLeak
     readDFRWindSensor();
+    DEBUG_PRINT(">  Fram after  : ");  // Investigation du 28 nov 2023 - bug de memoryLeak
+    DEBUG_PRINTLN(freeRam());  // Investigation du 28 nov 2023 - bug de memoryLeak
     myDelay(5000);
   }
 #endif

@@ -33,7 +33,7 @@ void configureBme280(BME_PERIPH_ID devID)
     if (devID == BMEINT) devAddr = BME280_INT;
 
     if (scanI2CbusFor(devAddr)) {  // -- TBV if this works
-      if (bme280.begin(devAddr))
+      if (bme280->begin(devAddr))
       {
         DEBUG_PRINTLN("success!");
         retCode = true;
@@ -59,6 +59,8 @@ void readBme280(BME_PERIPH_ID devID)
   // Start the loop timer
   unsigned long loopStartTime = millis();
 
+  bme280 = new Adafruit_BME280();
+
   if (devID == BMEEXT || devID == BMEINT) {
 
     // Initialize sensor
@@ -72,8 +74,8 @@ void readBme280(BME_PERIPH_ID devID)
 
       // Read sensor data
       if (devID == BMEEXT) {  // AKA as the external one
-        temperatureExt  = tempBmeEXT_CF * bme280.readTemperature() + tempBmeEXT_Offset;
-        uint16_t humExt = humBmeEXT_CF * bme280.readHumidity() + humBmeEXT_Offset;
+        temperatureExt  = tempBmeEXT_CF * bme280->readTemperature() + tempBmeEXT_Offset;
+        uint16_t humExt = humBmeEXT_CF * bme280->readHumidity() + humBmeEXT_Offset;
 
         if (humExt >= 100) {
           humidityExt = 100;
@@ -92,9 +94,9 @@ void readBme280(BME_PERIPH_ID devID)
       }
       if (devID == BMEINT) {  // AKA as the internal one
         // Read sensor data
-        temperatureInt = tempImeINT_CF * bme280.readTemperature() + tempBmeINT_Offset ;
-        uint16_t humInt =  humImeINT_CF * bme280.readHumidity() + humBmeINT_Offset; // no need of correction
-        pressureInt = bme280.readPressure() / 100.0F;
+        temperatureInt = tempImeINT_CF * bme280->readTemperature() + tempBmeINT_Offset ;
+        uint16_t humInt =  humImeINT_CF * bme280->readHumidity() + humBmeINT_Offset; // no need of correction
+        pressureInt = bme280->readPressure() / 100.0F;
 
         if (humInt >= 100) {
           humidityInt = 100;
@@ -122,6 +124,10 @@ void readBme280(BME_PERIPH_ID devID)
   } else {
     DEBUG_PRINTLN("ERROR - bme280 read: wrong devID!");
   }
+
+  //Yh 07/12: Done with BME object, releasing RAM:
+  delete bme280;
+
   // Stop the loop timer
   timer.readBme280 = millis() - loopStartTime;
 }
@@ -180,7 +186,7 @@ void readVeml7700()
   if(soleil <= 0) {
     solar = 0;
   } else {
-    solar = soleil;
+    solar = soleil;  //Tranformation implicite de 32b à 16b
   }
 
   solarStats.add(solar);
