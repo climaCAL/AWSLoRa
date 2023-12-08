@@ -65,8 +65,8 @@
 // Define modifed addresses
 // ----------------------------------------------------------------------------
 enum BME_PERIPH_ID {BMEINT=0,BMEEXT};
-#define BME280_EXT 0x77    // Second address for the BME280 - Used for the outside sensor.
-#define BME280_INT 0x76    // Second address for the BME280 - Used for the inside sensor.
+#define BME280_EXT BME280_ADDRESS            //defined in Adafruit Library = 0x77 - Used for the outside sensor.
+#define BME280_INT BME280_ADDRESS_ALTERNATE  //defined in Adafruit Library = 0x76 - Used for the inside sensor.
 #define WIND_SENSOR_SLAVE_ADDR 0x66  //WindSensor module I2C address declaration
 #define vemlI2cAddr 0x10  // According to datasheet page 6 (https://www.vishay.com/docs/84286/veml7700.pdf)
 
@@ -149,9 +149,9 @@ enum BME_PERIPH_ID {BMEINT=0,BMEEXT};
 // ----------------------------------------------------------------------------
 // Object instantiations
 // ----------------------------------------------------------------------------
-Adafruit_BME280                 bme280;
+Adafruit_BME280                 *bme280 = NULL; //new Adafruit_BME280();
 Adafruit_LSM303_Accel_Unified   lsm303 = Adafruit_LSM303_Accel_Unified(54321); // I2C address: 0x1E
-Adafruit_VEML7700               veml = Adafruit_VEML7700(); // High Accuracy Ambient Light Sensor
+Adafruit_VEML7700               *veml = NULL; // pointer to Adafruit_VEML7700 object -- High Accuracy Ambient Light Sensor
 RTCZero                         rtc;
 SdFs                            sd;           // File system object
 FsFile                          logFile;      // Log file
@@ -184,7 +184,11 @@ unsigned long sampleInterval    = 1;  // Sampling interval (minutes). 1 data/min
 unsigned int  averageInterval   = 5;  // Number of samples to be averaged in each message. 5 minutes average
 unsigned int  transmitInterval  = 1;      // Number of messages in each Iridium transmission (340-byte limit)
 unsigned int  retransmitLimit   = 1;      // Failed data transmission reattempts (340-byte limit)
-unsigned int  gnssTimeout       = 120;    // Timeout for GNSS signal acquisition (seconds)
+#if defined(CALIBRATE) || defined(DEBUG_GNSS)
+unsigned int  gnssTimeout       = 20;     // Timeout for GNSS signal acquisition (seconds)
+#else
+unsigned int  gnssTimeout       = 50;    // Timeout for GNSS signal acquisition (seconds)
+#endif
 bool          firstTimeFlag     = true;   // Flag to determine if program is running for the first time
 float         batteryCutoff     = 11.0;    // Battery voltage cutoff threshold (V)
 byte          loggingMode       = 1;  //Yh was:2    // Flag for new log file creation. 1: daily, 2: monthly, 3: yearly
@@ -379,15 +383,37 @@ void setup()
   enable12V();   // Enable 5V power
   myDelay(400);
 
+  configureRtc();       // Configure real-time clock (RTC)
+  readRtc();
+  
+
   while (true)
   {
     petDog(); // Reset WDT
+    DEBUG_PRINT(">  (A) Fram before: ");  // Investigation du 28 nov 2023 - bug de memoryLeak
+    DEBUG_PRINTLN(freeRam());  // Investigation du 28 nov 2023 - bug de memoryLeak
     calibrateAdc();
     readBme280(BMEEXT);  //Yh pls refer above enum BME_PERIPH_ID
+    DEBUG_PRINT(">  (B) Fram before: ");  // Investigation du 28 nov 2023 - bug de memoryLeak
+    DEBUG_PRINTLN(freeRam());  // Investigation du 28 nov 2023 - bug de memoryLeak
     readBme280(BMEINT);
+    DEBUG_PRINT(">  (C) Fram before: ");  // Investigation du 28 nov 2023 - bug de memoryLeak
+    DEBUG_PRINTLN(freeRam());  // Investigation du 28 nov 2023 - bug de memoryLeak
     readLsm303();
+    DEBUG_PRINT(">  (D) Fram before: ");  // Investigation du 28 nov 2023 - bug de memoryLeak
+    DEBUG_PRINTLN(freeRam());  // Investigation du 28 nov 2023 - bug de memoryLeak
     readVeml7700();    // Read solar radiation - Attention (09/28/23 Yh) si le VEML7700 n'est pas connecté, le code bloque... corrigé. Cause: le destructeur. Donc déclaré global.
+    DEBUG_PRINT(">  (E) Fram before: ");  // Investigation du 28 nov 2023 - bug de memoryLeak
+    DEBUG_PRINTLN(freeRam());  // Investigation du 28 nov 2023 - bug de memoryLeak
     readDFRWindSensor();
+    DEBUG_PRINT(">  (F) Fram before: ");  // Investigation du 28 nov 2023 - bug de memoryLeak
+    DEBUG_PRINTLN(freeRam());  // Investigation du 28 nov 2023 - bug de memoryLeak
+    readGnss(); // Sync RTC with the GNSS
+    readBattery();        // Read battery voltage
+
+    DEBUG_PRINT(">  Fram after  : ");  // Investigation du 28 nov 2023 - bug de memoryLeak
+    DEBUG_PRINTLN(freeRam());  // Investigation du 28 nov 2023 - bug de memoryLeak
+
     myDelay(5000);
   }
 #endif
@@ -498,6 +524,8 @@ void loop()
       if ((sampleCounter == averageInterval) || firstTimeFlag)
       {
         calculateStats(); // Calculate statistics of variables to be transmitted
+
+        LoRaMessage.hdop = freeRam(); //Yh hack of the day... on Dec 7th 2023
 
         LoRaTransmitData();  //Yh 042923
         // Check if data transmission interval has been reached

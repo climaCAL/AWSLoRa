@@ -33,7 +33,7 @@ void configureBme280(BME_PERIPH_ID devID)
     if (devID == BMEINT) devAddr = BME280_INT;
 
     if (scanI2CbusFor(devAddr)) {  // -- TBV if this works
-      if (bme280.begin(devAddr))
+      if (bme280->begin(devAddr))
       {
         DEBUG_PRINTLN("success!");
         retCode = true;
@@ -59,6 +59,8 @@ void readBme280(BME_PERIPH_ID devID)
   // Start the loop timer
   unsigned long loopStartTime = millis();
 
+  bme280 = new Adafruit_BME280();
+
   if (devID == BMEEXT || devID == BMEINT) {
 
     // Initialize sensor
@@ -72,8 +74,8 @@ void readBme280(BME_PERIPH_ID devID)
 
       // Read sensor data
       if (devID == BMEEXT) {  // AKA as the external one
-        temperatureExt  = tempBmeEXT_CF * bme280.readTemperature() + tempBmeEXT_Offset;
-        uint16_t humExt = humBmeEXT_CF * bme280.readHumidity() + humBmeEXT_Offset;
+        temperatureExt  = tempBmeEXT_CF * bme280->readTemperature() + tempBmeEXT_Offset;
+        uint16_t humExt = humBmeEXT_CF * bme280->readHumidity() + humBmeEXT_Offset;
 
         if (humExt >= 100) {
           humidityExt = 100;
@@ -92,9 +94,9 @@ void readBme280(BME_PERIPH_ID devID)
       }
       if (devID == BMEINT) {  // AKA as the internal one
         // Read sensor data
-        temperatureInt = tempImeINT_CF * bme280.readTemperature() + tempBmeINT_Offset ;
-        uint16_t humInt =  humImeINT_CF * bme280.readHumidity() + humBmeINT_Offset; // no need of correction
-        pressureInt = bme280.readPressure() / 100.0F;
+        temperatureInt = tempImeINT_CF * bme280->readTemperature() + tempBmeINT_Offset ;
+        uint16_t humInt =  humImeINT_CF * bme280->readHumidity() + humBmeINT_Offset; // no need of correction
+        pressureInt = bme280->readPressure() / 100.0F;
 
         if (humInt >= 100) {
           humidityInt = 100;
@@ -122,6 +124,10 @@ void readBme280(BME_PERIPH_ID devID)
   } else {
     DEBUG_PRINTLN("ERROR - bme280 read: wrong devID!");
   }
+
+  //Yh 07/12: Done with BME object, releasing RAM:
+  delete bme280;
+
   // Stop the loop timer
   timer.readBme280 = millis() - loopStartTime;
 }
@@ -129,20 +135,21 @@ void readBme280(BME_PERIPH_ID devID)
 // ----------------------------------------------------------------------------
 // Adafruit VEML7700 Lux Meter
 // ----------------------------------------------------------------------------
-void configureVEML7700(Adafruit_VEML7700 &veml)
+//O: void configureVEML7700(Adafruit_VEML7700 &veml)
+void configureVEML7700()
 {
   bool retCode = false;
 
   DEBUG_PRINT("Info - Initializing VEML7700...");
   
   if (scanI2CbusFor(vemlI2cAddr)) {
-    if (veml.begin())
+    if (veml->begin())
     {
       DEBUG_PRINTLN("success!");
       retCode = true;
       /*
-      veml.setGain(VEML7700_GAIN_2);
-      veml.setIntegrationTime(VEML7700_IT_200MS);
+      veml->setGain(VEML7700_GAIN_2);
+      veml->setIntegrationTime(VEML7700_IT_200MS);
       */
     }
     else
@@ -163,9 +170,12 @@ void readVeml7700()
 {
   // Start the loop timer
   unsigned long loopStartTime = millis();
+
+  veml = new Adafruit_VEML7700(); // High Accuracy Ambient Light Sensor
    
   // Initialize sensor
-  configureVEML7700(veml);
+  //O: configureVEML7700(veml);
+  configureVEML7700();
   
   // Check if sensor initialized successfully
   if (online.veml7700)
@@ -175,12 +185,12 @@ void readVeml7700()
     myDelay(250);
 
 // Add acquisition
-  int32_t soleil = veml_CF * veml.readLux() + veml_Offset; // Default = VEML_LUX_NORMAL
+  int32_t soleil = veml_CF * veml->readLux() + veml_Offset; // Default = VEML_LUX_NORMAL
   
   if(soleil <= 0) {
     solar = 0;
   } else {
-    solar = soleil;
+    solar = soleil;  //Tranformation implicite de 32b à 16b
   }
 
   solarStats.add(solar);
@@ -193,6 +203,8 @@ void readVeml7700()
   {
     DEBUG_PRINTLN("Warning - VEML7700 offline!");
   }
+
+  delete veml;
 
   // Stop the loop timer
   timer.readVeml7700 = millis() - loopStartTime;
