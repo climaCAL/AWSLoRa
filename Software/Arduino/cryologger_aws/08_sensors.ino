@@ -135,20 +135,21 @@ void readBme280(BME_PERIPH_ID devID)
 // ----------------------------------------------------------------------------
 // Adafruit VEML7700 Lux Meter
 // ----------------------------------------------------------------------------
-void configureVEML7700(Adafruit_VEML7700 &veml)
+//O: void configureVEML7700(Adafruit_VEML7700 &veml)
+void configureVEML7700()
 {
   bool retCode = false;
 
   DEBUG_PRINT("Info - Initializing VEML7700...");
   
   if (scanI2CbusFor(vemlI2cAddr)) {
-    if (veml.begin())
+    if (veml->begin())
     {
       DEBUG_PRINTLN("success!");
       retCode = true;
       /*
-      veml.setGain(VEML7700_GAIN_2);
-      veml.setIntegrationTime(VEML7700_IT_200MS);
+      veml->setGain(VEML7700_GAIN_2);
+      veml->setIntegrationTime(VEML7700_IT_200MS);
       */
     }
     else
@@ -169,9 +170,12 @@ void readVeml7700()
 {
   // Start the loop timer
   unsigned long loopStartTime = millis();
+
+  veml = new Adafruit_VEML7700(); // High Accuracy Ambient Light Sensor
    
   // Initialize sensor
-  configureVEML7700(veml);
+  //O: configureVEML7700(veml);
+  configureVEML7700();
   
   // Check if sensor initialized successfully
   if (online.veml7700)
@@ -181,7 +185,7 @@ void readVeml7700()
     myDelay(250);
 
 // Add acquisition
-  int32_t soleil = veml_CF * veml.readLux() + veml_Offset; // Default = VEML_LUX_NORMAL
+  int32_t soleil = veml_CF * veml->readLux() + veml_Offset; // Default = VEML_LUX_NORMAL
   
   if(soleil <= 0) {
     solar = 0;
@@ -199,6 +203,8 @@ void readVeml7700()
   {
     DEBUG_PRINTLN("Warning - VEML7700 offline!");
   }
+
+  delete veml;
 
   // Stop the loop timer
   timer.readVeml7700 = millis() - loopStartTime;

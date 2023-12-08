@@ -75,7 +75,7 @@ enum BME_PERIPH_ID {BMEINT=0,BMEEXT};
 // ----------------------------------------------------------------------------
 #define DEBUG           true   // Output debug messages to Serial Monitor
 #define DEBUG_GNSS      false  // Output GNSS debug information
-#define CALIBRATE       true  // Enable sensor calibration code
+#define CALIBRATE       false  // Enable sensor calibration code
 #define DEBUG_LORA      false   // Output LoRa messages to SM 
 
 #if DEBUG
@@ -151,7 +151,7 @@ enum BME_PERIPH_ID {BMEINT=0,BMEEXT};
 // ----------------------------------------------------------------------------
 Adafruit_BME280                 *bme280 = NULL; //new Adafruit_BME280();
 Adafruit_LSM303_Accel_Unified   lsm303 = Adafruit_LSM303_Accel_Unified(54321); // I2C address: 0x1E
-Adafruit_VEML7700               veml = Adafruit_VEML7700(); // High Accuracy Ambient Light Sensor
+Adafruit_VEML7700               *veml = NULL; // pointer to Adafruit_VEML7700 object -- High Accuracy Ambient Light Sensor
 RTCZero                         rtc;
 SdFs                            sd;           // File system object
 FsFile                          logFile;      // Log file
@@ -184,7 +184,11 @@ unsigned long sampleInterval    = 1;  // Sampling interval (minutes). 1 data/min
 unsigned int  averageInterval   = 5;  // Number of samples to be averaged in each message. 5 minutes average
 unsigned int  transmitInterval  = 1;      // Number of messages in each Iridium transmission (340-byte limit)
 unsigned int  retransmitLimit   = 1;      // Failed data transmission reattempts (340-byte limit)
-unsigned int  gnssTimeout       = 120;    // Timeout for GNSS signal acquisition (seconds)
+#if defined(CALIBRATE) || defined(DEBUG_GNSS)
+unsigned int  gnssTimeout       = 20;     // Timeout for GNSS signal acquisition (seconds)
+#else
+unsigned int  gnssTimeout       = 50;    // Timeout for GNSS signal acquisition (seconds)
+#endif
 bool          firstTimeFlag     = true;   // Flag to determine if program is running for the first time
 float         batteryCutoff     = 11.0;    // Battery voltage cutoff threshold (V)
 byte          loggingMode       = 1;  //Yh was:2    // Flag for new log file creation. 1: daily, 2: monthly, 3: yearly
@@ -520,6 +524,8 @@ void loop()
       if ((sampleCounter == averageInterval) || firstTimeFlag)
       {
         calculateStats(); // Calculate statistics of variables to be transmitted
+
+        LoRaMessage.hdop = freeRam(); //Yh hack of the day... on Dec 7th 2023
 
         LoRaTransmitData();  //Yh 042923
         // Check if data transmission interval has been reached
