@@ -54,7 +54,7 @@
 // Define unique identifier
 // ----------------------------------------------------------------------------
 #define CRYOLOGGER_ID "CAL"
-#define __VERSION "2.1.2" //Yh as of 24Nov2023
+#define __VERSION "2.1.4" //Yh as of 24Nov2023
 
 // ----------------------------------------------------------------------------
 // Data logging
@@ -101,10 +101,10 @@ enum BME_PERIPH_ID {BMEINT=0,BMEEXT};
 // Pin definitions
 // ----------------------------------------------------------------------------
 #define PIN_VBAT            A0  // readBattery()
-#define PIN_WIND_SPEED      A1  // read7911()
-#define PIN_WIND_DIR        A2  // read7911()
-#define PIN_HUMID           A3  // readHmp60()
-#define PIN_TEMP            A4  // readHmp60()
+//#define PIN_WIND_SPEED      A1  // read7911()
+//#define PIN_WIND_DIR        A2  // read7911()
+//#define PIN_HUMID           A3  // readHmp60()
+//#define PIN_TEMP            A4  // readHmp60()
 #define PIN_GNSS_EN         A5  // enableGnssPower() and disableGnssPower()
 #define PIN_MICROSD_CS      9   // Yh confirmedOk - april-may2023 - Was:4 on adaloger
 #define PIN_12V_EN          5   // 12 V step-up/down regulator enable12V() and disable12V()
@@ -113,8 +113,8 @@ enum BME_PERIPH_ID {BMEINT=0,BMEEXT};
 #define PIN_LED_RED         13
 
 // Unused
-#define PIN_SOLAR           14  // readSp212()
-#define PIN_SENSOR_PWR      14  // read7911()
+//#define PIN_SOLAR           14  // readSp212()
+//#define PIN_SENSOR_PWR      14  // read7911()
 
 //RFM95 - LoRa module
 //PMOD-RFM95: CS=10, RST=11, INT/DIO0=12
@@ -276,7 +276,7 @@ typedef struct {
 // Union to store LoRa message
 const byte localAddress = 0x01;     // LoRa address of this device
 const byte destination = 0xF1;      // LoRa destination to send to (gateway, repeater)
-const byte currentSupportedFrameVersion = 0x05;  //AWS cryologger
+const byte currentSupportedFrameVersion = 0x06;  //AWS cryologger
 
 typedef union
 {
@@ -286,14 +286,14 @@ typedef union
     uint8_t   recipient;          // recipient address              (1 byte)
     uint8_t   sender;             // local address                  (1 byte)
     uint32_t  unixtime;           // UNIX Epoch time                (4 bytes)
-    int16_t   temperatureInt;     // Internal temperature (°C)      (2 bytes)   * 100
-    uint16_t  humidityInt;        // Internal humidity (%)          (2 bytes)   * 100
+    int8_t   temperatureInt;     // Internal temperature (°C)       (1 bytes)
+    uint8_t  humidityInt;        // Internal humidity (%)           (1 bytes)   
     uint16_t  pressureInt;        // Internal pressure (hPa)        (2 bytes)   - 850 * 100
     int16_t   temperatureExt;     // External temperature (°C)      (2 bytes)   * 100
     uint16_t  humidityExt;        // External humidity (%)          (2 bytes)   * 10
     int16_t   pitch;              // Pitch (°)                      (2 bytes)   * 100
     int16_t   roll;               // Roll (°)                       (2 bytes)   * 100
-    uint16_t  solar;              // Solar irradiance (W m-2)       (2 bytes)   // CAREFUL: AWSSat=32b*100 vs AWSLoRa=16b*1
+    uint16_t  solar;              // Solar irradiance (W m-2)       (2 bytes)   /2  // CAREFUL: AWSSat=32b*100 vs AWSLoRa=16b*1
     uint16_t  windSpeed;          // Mean wind speed (m/s)          (2 bytes)   * 100
     uint16_t  windDirection;      // Mean wind direction (°)        (2 bytes)
     uint16_t  windGustSpeed;      // Wind gust speed (m/s)          (2 bytes)   * 100
@@ -301,13 +301,13 @@ typedef union
     int32_t   latitude;           // Latitude (DD)                  (4 bytes)   * 1000000
     int32_t   longitude;          // Longitude (DD)                 (4 bytes)   * 1000000
     uint8_t   satellites;         // # of satellites                (1 byte)
-    uint16_t  hdop;               // HDOP                           (2 bytes)
+    uint16_t  hdop;               // HDOP                           (2 bytes)   //Deviendra hauteur de neige en mm
     uint16_t  voltage;            // Battery voltage (V)            (2 bytes)   * 100
     uint16_t  transmitDuration;   // Previous transmission duration (2 bytes)
-    uint8_t   transmitStatus;     // Iridium return code            (1 byte)
+    uint8_t   transmitStatus;     // LoRa return code               (1 byte)
     uint16_t  iterationCounter;   // Message counter                (2 bytes)
   } __attribute__((packed));                                    // Total: (47 bytes)
-  uint8_t bytes[49];
+  uint8_t bytes[47];
 } LORA_MESSAGE;
 
 LORA_MESSAGE LoRaMessage;
@@ -347,14 +347,14 @@ void setup()
   // Pin assignments
   pinMode(PIN_LED_GREEN, OUTPUT);
   pinMode(PIN_LED_RED, OUTPUT);
-  pinMode(PIN_SENSOR_PWR, OUTPUT);
+//  pinMode(PIN_SENSOR_PWR, OUTPUT);
   pinMode(PIN_5V_EN, OUTPUT);
   pinMode(PIN_12V_EN, OUTPUT);
   pinMode(PIN_GNSS_EN, OUTPUT);
   pinMode(PIN_VBAT, INPUT);
   digitalWrite(PIN_LED_GREEN, LOW);   // Disable green LED
   digitalWrite(PIN_LED_RED, LOW);     // Disable red LED
-  digitalWrite(PIN_SENSOR_PWR, LOW);  // Disable power to 3.3V
+//  digitalWrite(PIN_SENSOR_PWR, LOW);  // Disable power to 3.3V
   digitalWrite(PIN_5V_EN, LOW);       // Disable power to 5v
   digitalWrite(PIN_12V_EN, LOW);      // Disable 12V power
   digitalWrite(PIN_GNSS_EN, HIGH);    // Disable power to GNSS
@@ -393,7 +393,7 @@ void setup()
     DEBUG_PRINT(">  (A) Fram before: ");  // Investigation du 28 nov 2023 - bug de memoryLeak
     DEBUG_PRINTLN(freeRam());  // Investigation du 28 nov 2023 - bug de memoryLeak
     calibrateAdc();
-    readBme280(BMEEXT);  //Yh pls refer above enum BME_PERIPH_ID
+    //readBme280(BMEEXT);  //Yh pls refer above enum BME_PERIPH_ID
     DEBUG_PRINT(">  (B) Fram before: ");  // Investigation du 28 nov 2023 - bug de memoryLeak
     DEBUG_PRINTLN(freeRam());  // Investigation du 28 nov 2023 - bug de memoryLeak
     readBme280(BMEINT);
@@ -402,7 +402,7 @@ void setup()
     readLsm303();
     DEBUG_PRINT(">  (D) Fram before: ");  // Investigation du 28 nov 2023 - bug de memoryLeak
     DEBUG_PRINTLN(freeRam());  // Investigation du 28 nov 2023 - bug de memoryLeak
-    readVeml7700();    // Read solar radiation - Attention (09/28/23 Yh) si le VEML7700 n'est pas connecté, le code bloque... corrigé. Cause: le destructeur. Donc déclaré global.
+    //readVeml7700();    // Read solar radiation - Attention (09/28/23 Yh) si le VEML7700 n'est pas connecté, le code bloque... corrigé. Cause: le destructeur. Donc déclaré global.
     DEBUG_PRINT(">  (E) Fram before: ");  // Investigation du 28 nov 2023 - bug de memoryLeak
     DEBUG_PRINTLN(freeRam());  // Investigation du 28 nov 2023 - bug de memoryLeak
     readDFRWindSensor();
