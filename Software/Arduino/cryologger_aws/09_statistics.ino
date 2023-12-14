@@ -2,12 +2,12 @@
 void calculateStats()
 {
   // Write data to union
-  LoRaMessage.temperatureInt = temperatureIntStats.average()   * 100;          // Mean internal temperature (°C)
-  LoRaMessage.humidityInt    = humidityIntStats.average()      * 100;          // Mean internal humidity (%)
+  LoRaMessage.temperatureInt = (int8_t)(temperatureIntStats.average());          // Mean internal temperature (°C) - integer value
+  LoRaMessage.humidityInt    = (uint8_t)(humidityIntStats.average());            // Mean internal humidity (%) - integer value
   LoRaMessage.pressureInt    = (pressureIntStats.average()     - 850) * 100;   // Mean internal pressure (hPa)
   LoRaMessage.temperatureExt = temperatureExtStats.average()   * 100;          // Mean external temperature (°C)
   LoRaMessage.humidityExt    = humidityExtStats.average()      * 100;          // Mean external humidity (%)
-  LoRaMessage.solar          = solarStats.average();           // Mean solar irradiance (W m-2)
+  LoRaMessage.solar          = solarStats.average()            / 2;            // Mean solar irradiance (W m-2), without LSB
   LoRaMessage.voltage        = batteryStats.average()          * 100;          // Mean battery voltage (V)
 
   // Calculate mean wind speed and direction vectors
