@@ -646,21 +646,29 @@ void readDFRWindSensor()
   byte len = Wire.requestFrom(WIND_SENSOR_SLAVE_ADDR,0x06);  //Requesting 6 bytes from slave
 
   if (len != 0) {
+
     while (Wire.available() > 0) {
-      for(int i = 0; i < 6; i++) {
-        lectureVent.regMemoryMap[i] = Wire.read();
+      for(int i = 0; i < 3; i++) {
+        uint8_t LSB = Wire.read();
+        uint8_t MSB = Wire.read();
+        lectureVent.regMemoryMap[i] = (MSB<<8)+LSB;
       }
     }
-    lectureVent.angleVentFloat = ((lectureVent.regMemoryMap[0] << 8) + lectureVent.regMemoryMap[1])/10.0;
-    lectureVent.directionVentInt = (lectureVent.regMemoryMap[2] << 8) + lectureVent.regMemoryMap[3];
-    lectureVent.vitesseVentFloat = ((lectureVent.regMemoryMap[4] << 8) + lectureVent.regMemoryMap[5])/10.0;
+    // lectureVent.angleVentFloat = ((lectureVent.regMemoryMap[0] << 8) + lectureVent.regMemoryMap[1])/10.0;
+    // lectureVent.directionVentInt = (lectureVent.regMemoryMap[2] << 8) + lectureVent.regMemoryMap[3];
+    // lectureVent.vitesseVentFloat = ((lectureVent.regMemoryMap[4] << 8) + lectureVent.regMemoryMap[5])/10.0;
+    lectureVent.angleVentFloat = lectureVent.regMemoryMap[0]/10.0;
+    lectureVent.directionVentInt = lectureVent.regMemoryMap[1];
+    lectureVent.vitesseVentFloat = lectureVent.regMemoryMap[2]/10.0;
 
     windDirection = lectureVent.angleVentFloat;
     windDirectionSector = lectureVent.directionVentInt;
     windSpeed = lectureVent.vitesseVentFloat;
 
     char smallMsg[48]={0};  //Temps buffer
-    sprintf(smallMsg,"%x %x %x %x %x %x",lectureVent.regMemoryMap[0],lectureVent.regMemoryMap[1],lectureVent.regMemoryMap[2],lectureVent.regMemoryMap[3],lectureVent.regMemoryMap[4],lectureVent.regMemoryMap[5]);
+    //sprintf(smallMsg,"%x %x %x %x %x %x",lectureVent.regMemoryMap[0],lectureVent.regMemoryMap[1],lectureVent.regMemoryMap[2],lectureVent.regMemoryMap[3],lectureVent.regMemoryMap[4],lectureVent.regMemoryMap[5]);
+    sprintf(smallMsg,"%x %x %x",lectureVent.regMemoryMap[0],lectureVent.regMemoryMap[1],lectureVent.regMemoryMap[2]);
+
     DEBUG_PRINT(F("\t*RAW* readings: ")); DEBUG_PRINTLN(smallMsg);
     
   } else {
@@ -669,11 +677,12 @@ void readDFRWindSensor()
     windSpeed = 0; 
   }
 
-  if (windSpeed == 0)
-  {
-    windDirection = 0.0;
-    windDirectionSector = 0;
-  }
+  //Yh 17 dec2023: Pourquoi? on pourrait garder la direction en cas de vent faible (meme nul)... derniere direction.
+  // if (windSpeed == 0)
+  // {
+  //   windDirection = 0.0;
+  //   windDirectionSector = 0;
+  // }
 
   // Check and update wind gust speed and direction
   if ((windSpeed > 0) && (windSpeed > windGustSpeed))
@@ -682,9 +691,10 @@ void readDFRWindSensor()
     windGustDirection = windDirection;
   }
 
+  //Yh 17dec2023: inutile puisque la fct windVectors s'en occupe, donc mis en commentaires
   // Write data to union (LoRa)
-  LoRaMessage.windSpeed = windSpeed * 100;
-  LoRaMessage.windDirection = windDirection;
+  //LoRaMessage.windSpeed = windSpeed * 100;
+  //LoRaMessage.windDirection = windDirection;
 
   // Calculate wind speed and direction vectors
   // http://tornado.sfsu.edu/geosciences/classes/m430/Wind/WindDirection.html

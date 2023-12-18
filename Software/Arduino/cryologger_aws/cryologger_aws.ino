@@ -54,7 +54,7 @@
 // Define unique identifier
 // ----------------------------------------------------------------------------
 #define CRYOLOGGER_ID "CAL"
-#define __VERSION "2.1.4" //Yh as of 24Nov2023
+#define __VERSION "3.0.2" //Yh as of 17dec2023
 
 // ----------------------------------------------------------------------------
 // Data logging
@@ -267,7 +267,7 @@ tmElements_t  tm;                         // Variable for converting time elemen
 
 // DFRWindSensor (CAL) struc to store/retreive data
 typedef struct {
-  uint8_t regMemoryMap[6] = {0,0,0,0,0,0};
+  uint16_t regMemoryMap[3] = {0,0,0};
   float angleVentFloat = 0;
   uint16_t directionVentInt = 0;
   float vitesseVentFloat = 0;
@@ -286,8 +286,8 @@ typedef union
     uint8_t   recipient;          // recipient address              (1 byte)
     uint8_t   sender;             // local address                  (1 byte)
     uint32_t  unixtime;           // UNIX Epoch time                (4 bytes)
-    int8_t   temperatureInt;     // Internal temperature (°C)       (1 bytes)
-    uint8_t  humidityInt;        // Internal humidity (%)           (1 bytes)   
+    int8_t    temperatureInt;     // Internal temperature (°C)      (1 bytes)
+    uint8_t   humidityInt;        // Internal humidity (%)          (1 bytes)   
     uint16_t  pressureInt;        // Internal pressure (hPa)        (2 bytes)   - 850 * 100
     int16_t   temperatureExt;     // External temperature (°C)      (2 bytes)   * 100
     uint16_t  humidityExt;        // External humidity (%)          (2 bytes)   * 10
@@ -378,10 +378,8 @@ void setup()
   printLine();
 
 #if CALIBRATE
-  enable5V();  // Enable 12V power
-  myDelay(400);
-  enable12V();   // Enable 5V power
-  myDelay(400);
+  enable5V();  // Enable 12V power; includes 500ms delay
+  enable12V();   // Enable 5V power; includes 500ms delay
 
   configureRtc();       // Configure real-time clock (RTC)
   readRtc();
@@ -393,7 +391,7 @@ void setup()
     DEBUG_PRINT(">  (A) Fram before: ");  // Investigation du 28 nov 2023 - bug de memoryLeak
     DEBUG_PRINTLN(freeRam());  // Investigation du 28 nov 2023 - bug de memoryLeak
     calibrateAdc();
-    //readBme280(BMEEXT);  //Yh pls refer above enum BME_PERIPH_ID
+    readBme280(BMEEXT);  //Yh pls refer above enum BME_PERIPH_ID
     DEBUG_PRINT(">  (B) Fram before: ");  // Investigation du 28 nov 2023 - bug de memoryLeak
     DEBUG_PRINTLN(freeRam());  // Investigation du 28 nov 2023 - bug de memoryLeak
     readBme280(BMEINT);
@@ -402,7 +400,7 @@ void setup()
     readLsm303();
     DEBUG_PRINT(">  (D) Fram before: ");  // Investigation du 28 nov 2023 - bug de memoryLeak
     DEBUG_PRINTLN(freeRam());  // Investigation du 28 nov 2023 - bug de memoryLeak
-    //readVeml7700();    // Read solar radiation - Attention (09/28/23 Yh) si le VEML7700 n'est pas connecté, le code bloque... corrigé. Cause: le destructeur. Donc déclaré global.
+    readVeml7700();    // Read solar radiation - Attention (09/28/23 Yh) si le VEML7700 n'est pas connecté, le code bloque... corrigé. Cause: le destructeur. Donc déclaré global.
     DEBUG_PRINT(">  (E) Fram before: ");  // Investigation du 28 nov 2023 - bug de memoryLeak
     DEBUG_PRINTLN(freeRam());  // Investigation du 28 nov 2023 - bug de memoryLeak
     readDFRWindSensor();
@@ -506,10 +504,8 @@ void loop()
       cutoffCounter = 0;
 
       // Perform measurements
-      enable5V();       // Enable 5V power
-      myDelay(400);     // power settle time
-      enable12V();      // Enable 12V power
-      myDelay(400);     // power settle time
+      enable5V();       // Enable 5V power; includes a 500ms settle delay
+      enable12V();      // Enable 12V power; includes a 500ms settle delay
 
       readBme280(BMEEXT);     // Read sensor (external one)
       readBme280(BMEINT);     // Read second bme (internal one)
