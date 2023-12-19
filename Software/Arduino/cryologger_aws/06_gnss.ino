@@ -251,13 +251,13 @@ void readGnss()
     latitude = gnss.location.lat();
     longitude = gnss.location.lng();
     satellites = gnss.satellites.value();
-    hdop = gnss.hdop.value();
+    //Yh 18dec2023 (retiré): hdop = gnss.hdop.value();
 
     // Write data to buffer
     LoRaMessage.latitude = gnss.location.lat() * 1000000;
     LoRaMessage.longitude = gnss.location.lng() * 1000000;
     LoRaMessage.satellites = gnss.satellites.value();
-    LoRaMessage.hdop = gnss.hdop.value();
+    //Yh 18dec2023 (retiré): LoRaMessage.hdop = gnss.hdop.value();
 
     DEBUG_PRINT(F("Info - RTC drift ")); DEBUG_PRINT(rtcDrift); DEBUG_PRINTLN(F(" seconds"));
     blinkLed(PIN_LED_GREEN, 5, 100);

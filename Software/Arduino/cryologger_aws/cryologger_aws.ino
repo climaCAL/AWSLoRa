@@ -54,7 +54,7 @@
 // Define unique identifier
 // ----------------------------------------------------------------------------
 #define CRYOLOGGER_ID "CAL"
-#define __VERSION "3.0.2" //Yh as of 17dec2023
+#define __VERSION "3.1.1" //Yh as of 19dec2023
 
 // ----------------------------------------------------------------------------
 // Data logging
@@ -176,6 +176,7 @@ Statistic solarStats;           // Solar radiation
 Statistic windSpeedStats;       // Wind speed
 Statistic uStats;               // Wind east-west wind vector component (u)
 Statistic vStats;               // Wind north-south wind vector component (v)
+Statistic hautNeige;            // Suivi hauteur de neige
 
 // ----------------------------------------------------------------------------
 // User defined global variable declarations
@@ -254,6 +255,8 @@ float         windDirection     = 0.0;    // Wind direction (°)
 float         windGustSpeed     = 0.0;    // Wind gust speed  (m/s)
 float         windGustDirection = 0.0;    // Wind gust direction (°)
 int           windDirectionSector = 0.0;  // Wind direction indicator (ref to DFRWindSpeed() for details)
+float         hauteurNeige         = 0.0;    //Mesure de la hauteur de neige, en mm
+float         temperatureHN     =0.0;     //Temperature au moment de la mesure de la hauteur de neige (en C, 1C pres)
 float         voltage           = 0.0;    // Battery voltage (V)
 float         latitude          = 0.0;    // GNSS latitude (DD)
 float         longitude         = 0.0;    // GNSS longitude (DD)
@@ -266,12 +269,21 @@ tmElements_t  tm;                         // Variable for converting time elemen
 // ----------------------------------------------------------------------------
 
 // DFRWindSensor (CAL) struc to store/retreive data
+// regMemoryMap[0] = direction vent en degrés (0-360)
+// regMemoryMap[1] = direction vent en secteur (0-15)
+// regMemoryMap[2] = vitesse vent en m/s *10
+// regMemoryMap[3] = hauteur de neige en mm
+// regMemoryMap[4] = temperature de reference pour la mesure hauteur de neige, em Celcius resolution de 1C
 typedef struct {
-  uint16_t regMemoryMap[3] = {0,0,0};
+  uint16_t regMemoryMap[5] = {0,0,0,0,0};
   float angleVentFloat = 0;
   uint16_t directionVentInt = 0;
   float vitesseVentFloat = 0;
+  float hauteurNeige = 0;
+  float temperatureHN = 0;
 }vent;
+
+const uint8_t ventRegMemMapSize = 10;  //5*2 bytes (requis pour la req de lecture I2C)
 
 // Union to store LoRa message
 const byte localAddress = 0x01;     // LoRa address of this device
@@ -301,7 +313,9 @@ typedef union
     int32_t   latitude;           // Latitude (DD)                  (4 bytes)   * 1000000
     int32_t   longitude;          // Longitude (DD)                 (4 bytes)   * 1000000
     uint8_t   satellites;         // # of satellites                (1 byte)
-    uint16_t  hdop;               // HDOP                           (2 bytes)   //Deviendra hauteur de neige en mm
+    // 18déc2023: uint16_t  hdop;               // HDOP                           (2 bytes)   //Deviendra hauteur de neige en mm
+    uint16_t  hauteurNeige;          // mesure de la hauteur de neige (mm) (2 bytes)
+    // Yh 18 déc 2023: Question: a-t-on besoin de la mesure de la temperature selon le capteur hauteur de neige??
     uint16_t  voltage;            // Battery voltage (V)            (2 bytes)   * 100
     uint16_t  transmitDuration;   // Previous transmission duration (2 bytes)
     uint8_t   transmitStatus;     // LoRa return code               (1 byte)
@@ -521,7 +535,7 @@ void loop()
       {
         calculateStats(); // Calculate statistics of variables to be transmitted
 
-        LoRaMessage.hdop = freeRam(); //Yh hack of the day... on Dec 7th 2023
+        //LoRaMessage.hdop = freeRam(); //Yh hack of the day... on Dec 7th 2023 - retiré le 18déc2023
 
         LoRaTransmitData();  //Yh 042923
         // Check if data transmission interval has been reached

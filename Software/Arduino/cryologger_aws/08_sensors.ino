@@ -641,33 +641,46 @@ void readDFRWindSensor()
   Wire.begin();
   myDelay(2000);
 
+// 19déc2023 - Yh: à refactoriser car le nom de la fonction ne fait plus seulement ce qui est attendu... i.e: ce n'est plus seulement le vent.
+
   vent lectureVent;
 
-  byte len = Wire.requestFrom(WIND_SENSOR_SLAVE_ADDR,0x06);  //Requesting 6 bytes from slave
+  byte len = Wire.requestFrom(WIND_SENSOR_SLAVE_ADDR,ventRegMemMapSize);  //Requesting 6 bytes from slave
 
   if (len != 0) {
 
     while (Wire.available() > 0) {
-      for(int i = 0; i < 3; i++) {
+      if (!(len % 2))
+        len = len - 1; //nombre pair seulement
+
+      for (int i = 0; i < len; i++) {   //modif par Yh le 18déc2023 pour s'ajuster aux nb de bytes recus, avant était i<3
         uint8_t LSB = Wire.read();
         uint8_t MSB = Wire.read();
         lectureVent.regMemoryMap[i] = (MSB<<8)+LSB;
       }
     }
-    // lectureVent.angleVentFloat = ((lectureVent.regMemoryMap[0] << 8) + lectureVent.regMemoryMap[1])/10.0;
-    // lectureVent.directionVentInt = (lectureVent.regMemoryMap[2] << 8) + lectureVent.regMemoryMap[3];
-    // lectureVent.vitesseVentFloat = ((lectureVent.regMemoryMap[4] << 8) + lectureVent.regMemoryMap[5])/10.0;
+
     lectureVent.angleVentFloat = lectureVent.regMemoryMap[0]/10.0;
     lectureVent.directionVentInt = lectureVent.regMemoryMap[1];
     lectureVent.vitesseVentFloat = lectureVent.regMemoryMap[2]/10.0;
+    lectureVent.hauteurNeige = lectureVent.regMemoryMap[3];
+    lectureVent.temperatureHN = lectureVent.regMemoryMap[4];
 
     windDirection = lectureVent.angleVentFloat;
     windDirectionSector = lectureVent.directionVentInt;
     windSpeed = lectureVent.vitesseVentFloat;
 
-    char smallMsg[48]={0};  //Temps buffer
-    //sprintf(smallMsg,"%x %x %x %x %x %x",lectureVent.regMemoryMap[0],lectureVent.regMemoryMap[1],lectureVent.regMemoryMap[2],lectureVent.regMemoryMap[3],lectureVent.regMemoryMap[4],lectureVent.regMemoryMap[5]);
-    sprintf(smallMsg,"%x %x %x",lectureVent.regMemoryMap[0],lectureVent.regMemoryMap[1],lectureVent.regMemoryMap[2]);
+    //Yh 18Déc2023: TODO
+    //Traitement nécessaire si la temperatureHN est trop différente de la température du BME280 EXT (si disponible) ET que la hauteurNeige est disponible (pas 0 ou négatif)
+    //Pour l'instant on y va directement:
+
+    hauteurNeige = lectureVent.hauteurNeige;
+    temperatureHN = lectureVent.temperatureHN;
+
+    hautNeige.add(hauteurNeige);
+
+    char smallMsg[64]={0};  //Temps buffer
+    sprintf(smallMsg,"%x %x %x",lectureVent.regMemoryMap[0],lectureVent.regMemoryMap[1],lectureVent.regMemoryMap[2],lectureVent.regMemoryMap[3],lectureVent.regMemoryMap[4]);
 
     DEBUG_PRINT(F("\t*RAW* readings: ")); DEBUG_PRINTLN(smallMsg);
     

@@ -93,7 +93,7 @@ void createLogFile()
 
   // Write header to file
   logFile.println("sample,datetime,voltage,temperature_int,humidity_int,pressure_int,temperature_ext,"
-                  "humidity_ext,pitch,roll,wind_speed,wind_direction,solar,latitude,longitude,satellites,hdop,"
+                  "humidity_ext,pitch,roll,wind_speed,wind_direction,solar,latitude,longitude,satellites,hautNeige,temperatureHN"
                   "online_microSd,online_Bme280_I,online_Bme280_E,online_Lsm303,timer_readRtc,timer_readBattery,timer_configMicroSd,"
                   "timer_readGnss,timer_bme280,timer_lsm303,transmit_status,rtc_drift,free_ram,"
                   "sampleInterval,averageInterval,transmitInterval,retransmitLimit,gnssTimeout");
@@ -172,7 +172,10 @@ void logData()
       logFile.print(latitude, 6);         logFile.print(",");
       logFile.print(longitude, 6);        logFile.print(",");
       logFile.print(satellites);          logFile.print(",");
-      logFile.print(hdop);                logFile.print(",");
+      //Yh 18dec2023 (retiré): logFile.print(hdop);                logFile.print(",");
+      logFile.print(hauteurNeige);           logFile.print(",");
+      logFile.print(temperatureHN);       logFile.print(",");
+      
 
       // Online information
       logFile.print(online.microSd);      logFile.print(",");
@@ -236,7 +239,9 @@ void logData()
       DEBUG_PRINT_DEC(latitude, 6);     DEBUG_PRINT(",");
       DEBUG_PRINT_DEC(longitude, 6);    DEBUG_PRINT(",");
       DEBUG_PRINT(satellites);          DEBUG_PRINT(",");
-      DEBUG_PRINT(hdop);                DEBUG_PRINT(",");
+      //Yh 18dec2023 (retiré):DEBUG_PRINT(hdop);                DEBUG_PRINT(",");
+      DEBUG_PRINT(hauteurNeige);           DEBUG_PRINT(",");
+      DEBUG_PRINT(temperatureHN);       DEBUG_PRINT(",");
 
       // Online information
       DEBUG_PRINT(online.microSd);      DEBUG_PRINT(",");

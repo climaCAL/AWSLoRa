@@ -61,7 +61,7 @@ void printTimers()
 void printMoSbd()
 {
   printLine();
-  DEBUG_PRINTLN("MO-SBD Message Data");
+  DEBUG_PRINTLN("LoRa Message Data");
   printLine();
 
   DEBUG_PRINT("unixtime:");         printTab(2);  DEBUG_PRINTLN(LoRaMessage.unixtime);
@@ -80,7 +80,8 @@ void printMoSbd()
   DEBUG_PRINT("latitude:");         printTab(2);  DEBUG_PRINTLN(LoRaMessage.latitude);
   DEBUG_PRINT("longitude:");        printTab(2);  DEBUG_PRINTLN(LoRaMessage.longitude);
   DEBUG_PRINT("satellites:");       printTab(2);  DEBUG_PRINTLN(LoRaMessage.satellites);
-  DEBUG_PRINT("hdop:");             printTab(3);  DEBUG_PRINTLN(LoRaMessage.hdop);
+  //Yh 18dec2023 (retiré): DEBUG_PRINT("hdop:");             printTab(3);  DEBUG_PRINTLN(LoRaMessage.hdop);
+  DEBUG_PRINT("hauteurNeige:");     printTab(1);  DEBUG_PRINTLN(LoRaMessage.hauteurNeige);
   DEBUG_PRINT("voltage:");          printTab(2);  DEBUG_PRINTLN(LoRaMessage.voltage);
   DEBUG_PRINT("transmitDuration:"); printTab(1);  DEBUG_PRINTLN(LoRaMessage.transmitDuration);
   DEBUG_PRINT("transmitStatus:");   printTab(2);  DEBUG_PRINTLN(LoRaMessage.transmitStatus);

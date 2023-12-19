@@ -9,6 +9,7 @@ void calculateStats()
   LoRaMessage.humidityExt    = humidityExtStats.average()      * 100;          // Mean external humidity (%)
   LoRaMessage.solar          = solarStats.average()            / 2;            // Mean solar irradiance (W m-2), without LSB
   LoRaMessage.voltage        = batteryStats.average()          * 100;          // Mean battery voltage (V)
+  LoRaMessage.hauteurNeige   = hautNeige.average();
 
   // Calculate mean wind speed and direction vectors
   windVectors();
@@ -98,4 +99,12 @@ void printStats()
   DEBUG_PRINT(F("Mean: "));       DEBUG_PRINTLN(uStats.average());
   DEBUG_PRINT(F("Wind gust speed: "));      printTab(1);  DEBUG_PRINTLN(windGustSpeed);
   DEBUG_PRINT(F("Wind gust direction: "));  printTab(1);  DEBUG_PRINTLN(windGustDirection);
+
+  //Hauteur de neige:
+  DEBUG_PRINT(F("HauteurNeige"));                                              printTab(1);
+  DEBUG_PRINT(F("Samples: "));    DEBUG_PRINT(hautNeige.count());              printTab(1);
+  DEBUG_PRINT(F("Min: "));        DEBUG_PRINT(hautNeige.minimum());            printTab(1);
+  DEBUG_PRINT(F("Max: "));        DEBUG_PRINT(hautNeige.maximum());            printTab(1);
+  DEBUG_PRINT(F("Mean: "));       DEBUG_PRINTLN(hautNeige.average());
+
 }
