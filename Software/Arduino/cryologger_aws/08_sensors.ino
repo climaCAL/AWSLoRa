@@ -645,7 +645,7 @@ void readDFRWindSensor()
 
   vent lectureVent;
 
-  byte len = Wire.requestFrom(WIND_SENSOR_SLAVE_ADDR,ventRegMemMapSize);  //Requesting 6 bytes from slave
+  byte len = Wire.requestFrom(WIND_SENSOR_SLAVE_ADDR,ventRegMemMapSize);  //Requesting __ bytes from slave
 
   if (len != 0) {
 
