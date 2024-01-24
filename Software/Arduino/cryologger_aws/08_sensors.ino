@@ -649,11 +649,13 @@ void readDFRWindSensor()
 
   if (len != 0) {
 
-    while (Wire.available() > 0) {
-      if (!(len % 2))
-        len = len - 1; //nombre pair seulement
+    if (Wire.available() > 0) {
+//      if (!(len % 2))
+//        len = len - 1; //nombre pair seulement
+      DEBUG_PRINT(F("I2C received len: ")); DEBUG_PRINTLN(len);
 
-      for (int i = 0; i < len; i++) {   //modif par Yh le 18déc2023 pour s'ajuster aux nb de bytes recus, avant était i<3
+
+      for (int i = 0; i < len/2; i++) {   //modif par Yh le 18déc2023 pour s'ajuster aux nb de bytes recus, avant était i<3
         uint8_t LSB = Wire.read();
         uint8_t MSB = Wire.read();
         lectureVent.regMemoryMap[i] = (MSB<<8)+LSB;
@@ -674,13 +676,18 @@ void readDFRWindSensor()
     //Traitement nécessaire si la temperatureHN est trop différente de la température du BME280 EXT (si disponible) ET que la hauteurNeige est disponible (pas 0 ou négatif)
     //Pour l'instant on y va directement:
 
-    hauteurNeige = lectureVent.hauteurNeige;
-    temperatureHN = lectureVent.temperatureHN;
+    if (lectureVent.hauteurNeige < 4000) {  //Limite de la lecture: 4000mm = 4m sinon pas valide
+      hauteurNeige = lectureVent.hauteurNeige;
+      temperatureHN = lectureVent.temperatureHN;
+    } else {
+      hauteurNeige = 0;
+      temperatureHN = 0;
+    }
 
     hautNeige.add(hauteurNeige);
 
     char smallMsg[64]={0};  //Temps buffer
-    sprintf(smallMsg,"%x %x %x",lectureVent.regMemoryMap[0],lectureVent.regMemoryMap[1],lectureVent.regMemoryMap[2],lectureVent.regMemoryMap[3],lectureVent.regMemoryMap[4]);
+    sprintf(smallMsg,"%x %x %x %x %x",lectureVent.regMemoryMap[0],lectureVent.regMemoryMap[1],lectureVent.regMemoryMap[2],lectureVent.regMemoryMap[3],lectureVent.regMemoryMap[4]);
 
     DEBUG_PRINT(F("\t*RAW* readings: ")); DEBUG_PRINTLN(smallMsg);
     
@@ -728,6 +735,9 @@ void readDFRWindSensor()
   DEBUG_PRINT(F("\tWind Speed: ")); DEBUG_PRINTLN(windSpeed);
   DEBUG_PRINT(F("\tWind Direction: ")); DEBUG_PRINTLN(windDirection);
   DEBUG_PRINT(F("\tWind Dir. Sector: ")); DEBUG_PRINTLN(windDirectionSector);
+  DEBUG_PRINT(F("\thauteurNeige: ")); DEBUG_PRINTLN(hauteurNeige);
+  DEBUG_PRINT(F("\tTemp. hauteurNeige: ")); DEBUG_PRINTLN(temperatureHN);
+
 
     // Stop the loop timer
   timer.readDFRWS = millis() - loopStartTime;

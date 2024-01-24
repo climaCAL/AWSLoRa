@@ -54,7 +54,7 @@
 // Define unique identifier
 // ----------------------------------------------------------------------------
 #define CRYOLOGGER_ID "CAL"
-#define __VERSION "3.1.1" //Yh as of 19dec2023
+#define __VERSION "3.1.2" //Yh as of 19dec2023
 
 // ----------------------------------------------------------------------------
 // Data logging
@@ -181,14 +181,14 @@ Statistic hautNeige;            // Suivi hauteur de neige
 // ----------------------------------------------------------------------------
 // User defined global variable declarations
 // ----------------------------------------------------------------------------
-unsigned long sampleInterval    = 1;  // Sampling interval (minutes). 1 data/minute
+unsigned long sampleInterval    = 1;  // Sampling interval (minutes). 1 data/minute: implique match rtc.MATCH_SS pour l'alarme (et non pas MMSS)
 unsigned int  averageInterval   = 5;  // Number of samples to be averaged in each message. 5 minutes average
 unsigned int  transmitInterval  = 1;      // Number of messages in each Iridium transmission (340-byte limit)
 unsigned int  retransmitLimit   = 1;      // Failed data transmission reattempts (340-byte limit)
 #if defined(CALIBRATE) || defined(DEBUG_GNSS)
-unsigned int  gnssTimeout       = 20;     // Timeout for GNSS signal acquisition (seconds)
+unsigned int  gnssTimeout       = 10;     // Timeout for GNSS signal acquisition (seconds) - ne sais pas si c'est faisable en 10 secondes...
 #else
-unsigned int  gnssTimeout       = 50;    // Timeout for GNSS signal acquisition (seconds)
+unsigned int  gnssTimeout       = 20;    // Timeout for GNSS signal acquisition (seconds) 20 sec si le sampleInterval est a 1
 #endif
 bool          firstTimeFlag     = true;   // Flag to determine if program is running for the first time
 float         batteryCutoff     = 11.0;    // Battery voltage cutoff threshold (V)
@@ -283,7 +283,7 @@ typedef struct {
   float temperatureHN = 0;
 }vent;
 
-const uint8_t ventRegMemMapSize = 10;  //5*2 bytes (requis pour la req de lecture I2C)
+const uint8_t ventRegMemMapSize = 0x0A;  //10 = 5*2 bytes (requis pour la req de lecture I2C)
 
 // Union to store LoRa message
 const byte localAddress = 0x01;     // LoRa address of this device
