@@ -635,11 +635,11 @@ void readDFRWindSensor()
   // Start the loop timer
   unsigned long loopStartTime = millis();
 
-  DEBUG_PRINTLN("Info - Reading DFRWindSensor... sensor settle time of 2sec");
+  DEBUG_PRINTLN("Info - Reading DFRWindSensor... sensor settle time of 5sec");
 
   // Requires I2C bus
   Wire.begin();
-  myDelay(2000);
+  myDelay(5000);
 
 // 19déc2023 - Yh: à refactoriser car le nom de la fonction ne fait plus seulement ce qui est attendu... i.e: ce n'est plus seulement le vent.
 
