@@ -181,7 +181,6 @@ void readGnss()
   // Configure GNSS
   // Note: a delay of at least 1 s is required after powering on GNSS module
   myDelay(1000);
-
   GNSS_PORT.println("$PMTK220,1000*1F"); // Set NMEA update rate to 1 Hz
   GNSS_PORT.println("$PMTK314,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28"); // Set NMEA sentence output frequencies to GGA and RMC
   //GNSS_PORT.println("$PGCMD,33,1*6C"); // Enable antenna updates
@@ -254,8 +253,8 @@ void readGnss()
     //Yh 18dec2023 (retiré): hdop = gnss.hdop.value();
 
     // Write data to buffer
-    LoRaMessage.latitude = gnss.location.lat() * 1000000;
-    LoRaMessage.longitude = gnss.location.lng() * 1000000;
+    LoRaMessage.latitude = gnss.location.lat() * 1000000.0;
+    LoRaMessage.longitude = gnss.location.lng() * 1000000.0;
     LoRaMessage.satellites = gnss.satellites.value();
     //Yh 18dec2023 (retiré): LoRaMessage.hdop = gnss.hdop.value();
 

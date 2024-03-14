@@ -302,7 +302,7 @@ typedef union
     uint8_t   humidityInt;        // Internal humidity (%)          (1 bytes)   
     uint16_t  pressureInt;        // Internal pressure (hPa)        (2 bytes)   - 850 * 100
     int16_t   temperatureExt;     // External temperature (°C)      (2 bytes)   * 100
-    uint16_t  humidityExt;        // External humidity (%)          (2 bytes)   * 10
+    uint16_t  humidityExt;        // External humidity (%)          (2 bytes)   * 100
     int16_t   pitch;              // Pitch (°)                      (2 bytes)   * 100
     int16_t   roll;               // Roll (°)                       (2 bytes)   * 100
     uint16_t  solar;              // Solar irradiance (W m-2)       (2 bytes)   /2  // CAREFUL: AWSSat=32b*100 vs AWSLoRa=16b*1
@@ -538,18 +538,15 @@ void loop()
         //LoRaMessage.hdop = freeRam(); //Yh hack of the day... on Dec 7th 2023 - retiré le 18déc2023
 
         LoRaTransmitData();  //Yh 042923
-        // Check if data transmission interval has been reached
-        if ((transmitCounter == transmitInterval) || firstTimeFlag)
+        
+        // Check for date change
+        checkDate();
+        if (firstTimeFlag || (currentDate != newDate))
         {
-          // Check for date change
-          checkDate();
-          if (firstTimeFlag || (currentDate != newDate))
-          {
-            readGnss(); // Sync RTC with the GNSS
-            currentDate = newDate;
-            Serial.print("currentDate: "); Serial.println(currentDate);
-            Serial.print("newDate: "); Serial.println(newDate);
-          }
+          readGnss(); // Sync RTC with the GNSS
+          Serial.print("currentDate: "); Serial.println(currentDate);
+          Serial.print("newDate: "); Serial.println(newDate);
+          currentDate = newDate;
         }
         
         // Yh 090 - Ok, since interrupt handling for LoRa does not work
