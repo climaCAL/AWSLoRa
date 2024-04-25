@@ -92,7 +92,7 @@ void createLogFile()
   updateFileCreate(&logFile);
 
   // Write header to file
-  logFile.println("sample,datetime,voltage,temperature_int,humidity_int,pressure_int,temperature_ext,"
+  logFile.println("sample,datetime,voltage,temperature_int,humidity_int,pressure_ext,temperature_ext,"
                   "humidity_ext,pitch,roll,wind_speed,wind_direction,solar,latitude,longitude,satellites,hautNeige,temperatureHN"
                   "online_microSd,online_Bme280_I,online_Bme280_E,online_Lsm303,timer_readRtc,timer_readBattery,timer_configMicroSd,"
                   "timer_readGnss,timer_bme280,timer_lsm303,transmit_status,rtc_drift,free_ram,"
@@ -161,7 +161,7 @@ void logData()
       logFile.print(voltage);             logFile.print(",");
       logFile.print(temperatureInt);      logFile.print(",");
       logFile.print(humidityInt);         logFile.print(",");
-      logFile.print(pressureInt);         logFile.print(",");
+      logFile.print(pressureExt);         logFile.print(",");
       logFile.print(temperatureExt);      logFile.print(",");
       logFile.print(humidityExt);         logFile.print(",");
       logFile.print(pitch);               logFile.print(",");
@@ -228,7 +228,7 @@ void logData()
       DEBUG_PRINT(voltage);             DEBUG_PRINT(",");
       DEBUG_PRINT(temperatureInt);      DEBUG_PRINT(",");
       DEBUG_PRINT(humidityInt);         DEBUG_PRINT(",");
-      DEBUG_PRINT(pressureInt);         DEBUG_PRINT(",");
+      DEBUG_PRINT(pressureExt);         DEBUG_PRINT(",");
       DEBUG_PRINT(temperatureExt);      DEBUG_PRINT(",");
       DEBUG_PRINT(humidityExt);         DEBUG_PRINT(",");
       DEBUG_PRINT(pitch);               DEBUG_PRINT(",");

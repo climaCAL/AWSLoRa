@@ -96,7 +96,7 @@ void readBme280(BME_PERIPH_ID devID)
         // Read sensor data
         temperatureInt = tempImeINT_CF * bme280->readTemperature() + tempBmeINT_Offset ;
         uint16_t humInt =  humImeINT_CF * bme280->readHumidity() + humBmeINT_Offset; // no need of correction
-        pressureInt = bme280->readPressure() / 100.0F;
+//        pressureInt = bme280->readPressure() / 100.0F;
 
         if (humInt >= 100) {
           humidityInt = 100;
@@ -107,12 +107,12 @@ void readBme280(BME_PERIPH_ID devID)
         // Add to statistics object
         temperatureIntStats.add(temperatureInt);
         humidityIntStats.add(humidityInt);
-        pressureIntStats.add(pressureInt);
+//        pressureIntStats.add(pressureInt);
 
         #if CALIBRATE
           DEBUG_PRINT("\tTemperatureInt: "); DEBUG_PRINT(temperatureInt); DEBUG_PRINTLN(" C");
           DEBUG_PRINT("\tHumidityInt: "); DEBUG_PRINT(humidityInt); DEBUG_PRINTLN("%");
-          DEBUG_PRINT("\tPressure(Int): "); DEBUG_PRINT(pressureInt); DEBUG_PRINTLN(" kPa");
+//          DEBUG_PRINT("\tPressure(Int): "); DEBUG_PRINT(pressureInt); DEBUG_PRINTLN(" kPa");
         #endif
       }
       DEBUG_PRINTLN("done.");
@@ -136,79 +136,79 @@ void readBme280(BME_PERIPH_ID devID)
 // Adafruit VEML7700 Lux Meter
 // ----------------------------------------------------------------------------
 //O: void configureVEML7700(Adafruit_VEML7700 &veml)
-void configureVEML7700()
-{
-  bool retCode = false;
+// void configureVEML7700()
+// {
+//   bool retCode = false;
 
-  DEBUG_PRINT("Info - Initializing VEML7700...");
+//   DEBUG_PRINT("Info - Initializing VEML7700...");
   
-  if (scanI2CbusFor(vemlI2cAddr)) {
-    if (veml->begin())
-    {
-      DEBUG_PRINTLN("success!");
-      retCode = true;
-      /*
-      veml->setGain(VEML7700_GAIN_2);
-      veml->setIntegrationTime(VEML7700_IT_200MS);
-      */
-    }
-    else
-    {
-      DEBUG_PRINTLN("failed!");
-    }
-  } else  {
-    DEBUG_PRINT("VEML7700 init: no answer from id 0x");
-    DEBUG_PRINTLN_HEX(vemlI2cAddr);
-  }
+//   if (scanI2CbusFor(vemlI2cAddr)) {
+//     if (veml->begin())
+//     {
+//       DEBUG_PRINTLN("success!");
+//       retCode = true;
+//       /*
+//       veml->setGain(VEML7700_GAIN_2);
+//       veml->setIntegrationTime(VEML7700_IT_200MS);
+//       */
+//     }
+//     else
+//     {
+//       DEBUG_PRINTLN("failed!");
+//     }
+//   } else  {
+//     DEBUG_PRINT("VEML7700 init: no answer from id 0x");
+//     DEBUG_PRINTLN_HEX(vemlI2cAddr);
+//   }
 
-  online.veml7700 = retCode;
+//   online.veml7700 = retCode;
 
-}
+// }
 
-// Read VEML7700 (solar)
-void readVeml7700()
-{
-  // Start the loop timer
-  unsigned long loopStartTime = millis();
+// // Read VEML7700 (solar)
+// void readVeml7700()
+// {
+//   // Start the loop timer
+//   unsigned long loopStartTime = millis();
 
-  veml = new Adafruit_VEML7700(); // High Accuracy Ambient Light Sensor
+//   veml = new Adafruit_VEML7700(); // High Accuracy Ambient Light Sensor
    
-  // Initialize sensor
-  //O: configureVEML7700(veml);
-  configureVEML7700();
+//   // Initialize sensor
+//   //O: configureVEML7700(veml);
+//   configureVEML7700();
   
-  // Check if sensor initialized successfully
-  if (online.veml7700)
-  {
-    DEBUG_PRINT("Info - Reading VEML7700...");
+//   // Check if sensor initialized successfully
+//   if (online.veml7700)
+//   {
+//     DEBUG_PRINT("Info - Reading VEML7700...");
 
-    myDelay(250);
+//     myDelay(250);
 
-// Add acquisition
-  int32_t soleil = veml_CF * veml->readLux() + veml_Offset; // Default = VEML_LUX_NORMAL
+// // Add acquisition
+//   int32_t soleil = veml_CF * veml->readLux() + veml_Offset; // Default = VEML_LUX_NORMAL
   
-  if(soleil <= 0) {
-    solar = 0;
-  } else {
-    solar = soleil;  //Tranformation implicite de 32b à 16b
-  }
+//   if(soleil <= 0) {
+//     solar = 0;
+//   } else {
+//     solar = soleil;  //Tranformation implicite de 32b à 16b
+//   }
 
-  solarStats.add(solar);
+//   solarStats.add(solar);
 
-  DEBUG_PRINT("\tSolar: "); DEBUG_PRINT(solar); DEBUG_PRINTLN(" Lux");
+//   DEBUG_PRINT("\tSolar: "); DEBUG_PRINT(solar); DEBUG_PRINTLN(" Lux");
     
-    DEBUG_PRINTLN("done.");
-  }
-  else
-  {
-    DEBUG_PRINTLN("Warning - VEML7700 offline!");
-  }
+//     DEBUG_PRINTLN("done.");
+//   }
+//   else
+//   {
+//     DEBUG_PRINTLN("Warning - VEML7700 offline!");
+//   }
 
-  delete veml;
+//   delete veml;
 
-  // Stop the loop timer
-  timer.readVeml7700 = millis() - loopStartTime;
-}
+//   // Stop the loop timer
+//   timer.readVeml7700 = millis() - loopStartTime;
+// }
 
 // ----------------------------------------------------------------------------
 // Davis Instruments Temperature Humidity Sensor (Sensiron SHT31-LSS)
@@ -595,39 +595,22 @@ void readLsm303()
 // }
 
 // ----------------------------------------------------------------------------
-// In-house (CAL) built of combined Wind Sensor
+// In-house (CAL) built of combined Wind Sensors, BME280 and VEML7700
 // DFRobot WindSensor comprises the following 2:
 //    RS485 Wind Speed Transmitter (SEN0483) : https://wiki.dfrobot.com/RS485_Wind_Speed_Transmitter_SKU_SEN0483
 //    RS485 Wind Direction Transmitter (SEN0482) : https://wiki.dfrobot.com/RS485_Wind_Direction_Transmitter_SKU_SEN0482
-//Slave ragisters map (read-only):
+//Slave registers map (read-only):
   /*
-  0x00  MSB Angle Vent
-  0x01  LSB Angle Vent
-  0x02  MSB Direction Vent
-  0x03  LSB Direction Vent
-  0x04  MSB Vitesse Vent
-  0x05  MSB Vitesse Vent
-  
-  * DFRobot wind direction sensor informations :
-  *
-  * Direction	      16 Directions Value   Angle(360°)
-  * North	                0	              0° - 11.2°
-  * North-northeast	      1	              11.3° - 33.7°
-  * Northeast	            2	              33.8° - 56.2°
-  * East-northeast	      3	              56.3° - 78.7°
-  * East	                4	              78.8° - 101.2°
-  * East-southeast	      5	              101.3° - 123.7°
-  * Southeast	            6	              123.8° - 146.2°
-  * South-southeast	      7	              146.3° - 168.7°
-  * South	                8	              168.8° - 191.2°
-  * South-southwest	      9	              191.3° - 213.7°
-  * Southwest	            10	            213.8° - 236.2°
-  * West-southwest	      11	            236.3° - 258.7°
-  * West	                12	            258.8° - 281.2°
-  * West-northwest	      13	            281.3° - 303.7°
-  * Northwest	            14	            303.8° - 326.2°
-  * North-northwest	      15	            326.3° - 348.7°
-  * North	                16	            348.8° - 360°
+  0x00 (16 bits) Angle Vent
+  0x01 (16 bits) Direction Vent
+  0x02 (16 bits) Vitesse Vent
+  0x03 (16 bits) Hauteur de neige (mm)
+  0x04 (16 bits) Temperature HN (C)
+  0x05 (16 bits) Temperature BME280
+  0x06 (16 bits) Humidite BME280
+  0x07 (16 bits) Pression atmosph BME280
+  0x08 (16 bits) Luminosité VEML7700
+
  */
 // ----------------------------------------------------------------------------
 void readDFRWindSensor() 
@@ -639,11 +622,9 @@ void readDFRWindSensor()
 
   // Requires I2C bus
   Wire.begin();
-  myDelay(5000);
+  myDelay(5000);  //Laisser du temps au bridgeI2C de collecter les capteurs sur le modbus RS485, tout en laissant les capteurs faire leur travail
 
-// 19déc2023 - Yh: à refactoriser car le nom de la fonction ne fait plus seulement ce qui est attendu... i.e: ce n'est plus seulement le vent.
-
-  vent lectureVent;
+  sensorsDataStruct bridgeData;
 
   byte len = Wire.requestFrom(WIND_SENSOR_SLAVE_ADDR,ventRegMemMapSize);  //Requesting __ bytes from slave
 
@@ -654,31 +635,75 @@ void readDFRWindSensor()
 //        len = len - 1; //nombre pair seulement
       DEBUG_PRINT(F("I2C received len: ")); DEBUG_PRINTLN(len);
 
-
       for (int i = 0; i < len/2; i++) {   //modif par Yh le 18déc2023 pour s'ajuster aux nb de bytes recus, avant était i<3
         uint8_t LSB = Wire.read();
         uint8_t MSB = Wire.read();
-        lectureVent.regMemoryMap[i] = (MSB<<8)+LSB;
+        bridgeData.regMemoryMap[i] = (MSB<<8)+LSB;
       }
     }
 
-    lectureVent.angleVentFloat = lectureVent.regMemoryMap[0]/10.0;
-    lectureVent.directionVentInt = lectureVent.regMemoryMap[1];
-    lectureVent.vitesseVentFloat = lectureVent.regMemoryMap[2]/10.0;
-    lectureVent.hauteurNeige = lectureVent.regMemoryMap[3];
-    lectureVent.temperatureHN = lectureVent.regMemoryMap[4];
+    bridgeData.angleVentFloat = bridgeData.regMemoryMap[0] / 10.0;
+    bridgeData.directionVentInt = bridgeData.regMemoryMap[1];
+    bridgeData.vitesseVentFloat = bridgeData.regMemoryMap[2] / 10.0;
+    bridgeData.hauteurNeige = bridgeData.regMemoryMap[3];
+    bridgeData.temperatureHN = bridgeData.regMemoryMap[4];
 
-    windDirection = lectureVent.angleVentFloat;
-    windDirectionSector = lectureVent.directionVentInt;
-    windSpeed = lectureVent.vitesseVentFloat;
+    //Récupération des valeurs et validation des codes d'erreurs:
+    if ((int16_t)bridgeData.regMemoryMap[5] != temp_ERRORVAL) {
+      bridgeData.temperatureExt = bridgeData.regMemoryMap[5] / 100.0;
+      bridgeData.temperatureExt  = tempBmeEXT_CF * bridgeData.temperatureExt + tempBmeEXT_Offset;
+      temperatureExt = bridgeData.temperatureExt;  // External temperature (°C)
+      temperatureExtStats.add(temperatureExt );
+      #if CALIBRATE
+          DEBUG_PRINT("\tTemperatureExt: "); DEBUG_PRINT(temperatureExt); DEBUG_PRINTLN(" C");
+      #endif
+    }
+    // Question: est-ce qu'il faut injecter 0 dans le cas contraire?
+
+    if ((int16_t)bridgeData.regMemoryMap[6] != hum_ERRORVAL) {
+      bridgeData.humiditeExt = bridgeData.regMemoryMap[6] / 100.0;
+      float humExt = humBmeEXT_CF * bridgeData.humiditeExt + humBmeEXT_Offset;
+      if (humExt >= 100) {
+          humidityExt = 100;
+        } else {
+          humidityExt = humExt;
+        }
+      humidityExt    = bridgeData.humiditeExt;     // External humidity (%)
+      humidityExtStats.add(humidityExt);
+      #if CALIBRATE
+          DEBUG_PRINT("\tHumidityExt: "); DEBUG_PRINT(humidityExt); DEBUG_PRINTLN("%");
+      #endif
+    }
+    // Question: est-ce qu'il faut injecter 0 dans le cas contraire?
+
+    if ((int16_t)bridgeData.regMemoryMap[7] != pres_ERRORVAL) {
+      bridgeData.presAtmospExt = bridgeData.regMemoryMap[7] / 10.0;  //On veut en hPa
+      pressureExt    = bridgeData.presAtmospExt;     // External pressure (hPa)
+      pressureExtStats.add(pressureExt);
+      #if CALIBRATE
+          DEBUG_PRINT("\pressureExt: "); DEBUG_PRINT(pressureExt); DEBUG_PRINTLN("%");
+      #endif
+    }  
+    // Question: est-ce qu'il faut injecter 0 dans le cas contraire?
+
+    // Pression: en cas d'erreur, la valeur recue sera 0
+    float tempLum = bridgeData.regMemoryMap[8] / 3800.0;
+    bridgeData.luminoAmbExt = pow(10,tempLum);
+    solar = bridgeData.luminoAmbExt;      // Luminosite (lux)
+
+    windDirection = bridgeData.angleVentFloat;
+    windDirectionSector = bridgeData.directionVentInt;
+    windSpeed = bridgeData.vitesseVentFloat;
+
 
     //Yh 18Déc2023: TODO
     //Traitement nécessaire si la temperatureHN est trop différente de la température du BME280 EXT (si disponible) ET que la hauteurNeige est disponible (pas 0 ou négatif)
     //Pour l'instant on y va directement:
 
-    if (lectureVent.hauteurNeige < 4000) {  //Limite de la lecture: 4000mm = 4m sinon pas valide
-      hauteurNeige = lectureVent.hauteurNeige;
-      temperatureHN = lectureVent.temperatureHN;
+
+    if (bridgeData.hauteurNeige < 4000) {  //Limite de la lecture: 4000mm = 4m sinon pas valide
+      hauteurNeige = bridgeData.hauteurNeige;
+      temperatureHN = bridgeData.temperatureHN;
     } else {
       hauteurNeige = 0;
       temperatureHN = 0;
@@ -686,10 +711,11 @@ void readDFRWindSensor()
 
     hautNeige.add(hauteurNeige);
 
-    char smallMsg[64]={0};  //Temps buffer
-    sprintf(smallMsg,"%x %x %x %x %x",lectureVent.regMemoryMap[0],lectureVent.regMemoryMap[1],lectureVent.regMemoryMap[2],lectureVent.regMemoryMap[3],lectureVent.regMemoryMap[4]);
+    char smallMsg[128]={0};  //Temps buffer
+    sprintf(smallMsg,"%x %x %x %x %x %x %x %x %x",bridgeData.regMemoryMap[0],bridgeData.regMemoryMap[1],bridgeData.regMemoryMap[2],bridgeData.regMemoryMap[3],bridgeData.regMemoryMap[4],bridgeData.regMemoryMap[5],bridgeData.regMemoryMap[6],bridgeData.regMemoryMap[7],bridgeData.regMemoryMap[8]);
 
     DEBUG_PRINT(F("\t*RAW* readings: ")); DEBUG_PRINTLN(smallMsg);
+
     
   } else {
     windDirection = 0.0;

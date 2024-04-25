@@ -4,7 +4,7 @@ void calculateStats()
   // Write data to union
   LoRaMessage.temperatureInt = (int8_t)(temperatureIntStats.average());          // Mean internal temperature (°C) - integer value
   LoRaMessage.humidityInt    = (uint8_t)(humidityIntStats.average());            // Mean internal humidity (%) - integer value
-  LoRaMessage.pressureInt    = (pressureIntStats.average()     - 850) * 100;   // Mean internal pressure (hPa)
+  LoRaMessage.pressureExt    = (pressureExtStats.average()     - 850) * 100;   // Mean internal pressure (hPa)
   LoRaMessage.temperatureExt = temperatureExtStats.average()   * 100;          // Mean external temperature (°C)
   LoRaMessage.humidityExt    = humidityExtStats.average()      * 100;          // Mean external humidity (%)
   LoRaMessage.solar          = solarStats.average()            / 2;            // Mean solar irradiance (W m-2), without LSB
@@ -29,7 +29,7 @@ void clearStats()
   batteryStats.clear();
   temperatureIntStats.clear();
   humidityIntStats.clear();
-  pressureIntStats.clear();
+  pressureExtStats.clear();
   temperatureExtStats.clear();
   solarStats.clear();
   humidityExtStats.clear();
@@ -60,11 +60,11 @@ void printStats()
   DEBUG_PRINT(F("Min: "));        DEBUG_PRINT(humidityIntStats.minimum());      printTab(1);
   DEBUG_PRINT(F("Max: "));        DEBUG_PRINT(humidityIntStats.maximum());      printTab(1);
   DEBUG_PRINT(F("Mean: "));       DEBUG_PRINTLN(humidityIntStats.average());
-  DEBUG_PRINT(F("Pressure Int"));                                               printTab(1);
-  DEBUG_PRINT(F("Samples: "));    DEBUG_PRINT(pressureIntStats.count());        printTab(1);
-  DEBUG_PRINT(F("Min: "));        DEBUG_PRINT(pressureIntStats.minimum());      printTab(1);
-  DEBUG_PRINT(F("Max: "));        DEBUG_PRINT(pressureIntStats.maximum());      printTab(1);
-  DEBUG_PRINT(F("Mean: "));       DEBUG_PRINTLN(pressureIntStats.average());
+  DEBUG_PRINT(F("Pressure Ext"));                                               printTab(1);
+  DEBUG_PRINT(F("Samples: "));    DEBUG_PRINT(pressureExtStats.count());        printTab(1);
+  DEBUG_PRINT(F("Min: "));        DEBUG_PRINT(pressureExtStats.minimum());      printTab(1);
+  DEBUG_PRINT(F("Max: "));        DEBUG_PRINT(pressureExtStats.maximum());      printTab(1);
+  DEBUG_PRINT(F("Mean: "));       DEBUG_PRINTLN(pressureExtStats.average());
   DEBUG_PRINT(F("Temp Ext"));                                                   printTab(1);
   DEBUG_PRINT(F("Samples: "));    DEBUG_PRINT(temperatureExtStats.count());     printTab(1);
   DEBUG_PRINT(F("Min: "));        DEBUG_PRINT(temperatureExtStats.minimum());   printTab(1);

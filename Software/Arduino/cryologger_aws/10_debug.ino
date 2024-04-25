@@ -67,7 +67,7 @@ void printMoSbd()
   DEBUG_PRINT("unixtime:");         printTab(2);  DEBUG_PRINTLN(LoRaMessage.unixtime);
   DEBUG_PRINT("temperatureInt:");   printTab(2);  DEBUG_PRINTLN(LoRaMessage.temperatureInt);
   DEBUG_PRINT("humidityInt:");      printTab(2);  DEBUG_PRINTLN(LoRaMessage.humidityInt);
-  DEBUG_PRINT("pressureInt:");      printTab(2);  DEBUG_PRINTLN(LoRaMessage.pressureInt);
+  DEBUG_PRINT("pressureExt:");      printTab(2);  DEBUG_PRINTLN(LoRaMessage.pressureExt);
   DEBUG_PRINT("temperatureExt:");   printTab(2);  DEBUG_PRINTLN(LoRaMessage.temperatureExt);
   DEBUG_PRINT("humidityExt:");      printTab(2);  DEBUG_PRINTLN(LoRaMessage.humidityExt);
   DEBUG_PRINT("solar:");            printTab(3);  DEBUG_PRINTLN(LoRaMessage.solar);
