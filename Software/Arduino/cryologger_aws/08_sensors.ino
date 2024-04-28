@@ -618,22 +618,22 @@ void readDFRWindSensor()
   // Start the loop timer
   unsigned long loopStartTime = millis();
 
-  DEBUG_PRINTLN("Info - Reading DFRWindSensor... sensor settle time of 5sec");
+  DEBUG_PRINTF("Info - Reading DFRWindSensor... sensor settle time of "); DEBUG_PRINT(bridgeSettleDelay); DEBUG_PRINTFLN("sec");
 
   // Requires I2C bus
   Wire.begin();
-  myDelay(5000);  //Laisser du temps au bridgeI2C de collecter les capteurs sur le modbus RS485, tout en laissant les capteurs faire leur travail
+  myDelay(bridgeSettleDelay);  //Laisser du temps au bridgeI2C de collecter les capteurs sur le modbus RS485, tout en laissant les capteurs faire leur travail
 
   sensorsDataStruct bridgeData;
 
-  byte len = Wire.requestFrom(WIND_SENSOR_SLAVE_ADDR,ventRegMemMapSize);  //Requesting __ bytes from slave
+  byte len = Wire.requestFrom(BRIDGE_SENSOR_SLAVE_ADDR,dataRegMemMapSize);  //Requesting __ bytes from slave
 
   if (len != 0) {
 
     if (Wire.available() > 0) {
 //      if (!(len % 2))
 //        len = len - 1; //nombre pair seulement
-      DEBUG_PRINT(F("I2C received len: ")); DEBUG_PRINTLN(len);
+      DEBUG_PRINTF("I2C received len: "); DEBUG_PRINTLN(len);
 
       for (int i = 0; i < len/2; i++) {   //modif par Yh le 18déc2023 pour s'ajuster aux nb de bytes recus, avant était i<3
         uint8_t LSB = Wire.read();
@@ -641,6 +641,10 @@ void readDFRWindSensor()
         bridgeData.regMemoryMap[i] = (MSB<<8)+LSB;
       }
     }
+
+    char smallMsg[128]={0};  //Temps buffer
+    sprintf(smallMsg,"%x %x %x %x %x %x %x %x %x",bridgeData.regMemoryMap[0],bridgeData.regMemoryMap[1],bridgeData.regMemoryMap[2],bridgeData.regMemoryMap[3],bridgeData.regMemoryMap[4],bridgeData.regMemoryMap[5],bridgeData.regMemoryMap[6],bridgeData.regMemoryMap[7],bridgeData.regMemoryMap[8]);
+    DEBUG_PRINTF("\t*RAW* readings: "); DEBUG_PRINTLN(smallMsg);
 
     bridgeData.angleVentFloat = bridgeData.regMemoryMap[0] / 10.0;
     bridgeData.directionVentInt = bridgeData.regMemoryMap[1];
@@ -655,7 +659,7 @@ void readDFRWindSensor()
       temperatureExt = bridgeData.temperatureExt;  // External temperature (°C)
       temperatureExtStats.add(temperatureExt );
       #if CALIBRATE
-          DEBUG_PRINT("\tTemperatureExt: "); DEBUG_PRINT(temperatureExt); DEBUG_PRINTLN(" C");
+          DEBUG_PRINTF("\tTemperatureExt: "); DEBUG_PRINT(bridgeData.temperatureExt); DEBUG_PRINTFLN(" C");
       #endif
     }
     // Question: est-ce qu'il faut injecter 0 dans le cas contraire?
@@ -671,17 +675,18 @@ void readDFRWindSensor()
       humidityExt    = bridgeData.humiditeExt;     // External humidity (%)
       humidityExtStats.add(humidityExt);
       #if CALIBRATE
-          DEBUG_PRINT("\tHumidityExt: "); DEBUG_PRINT(humidityExt); DEBUG_PRINTLN("%");
+          DEBUG_PRINTF("\tHumidityExt: "); DEBUG_PRINT(bridgeData.humiditeExt); DEBUG_PRINTFLN("%");
       #endif
     }
     // Question: est-ce qu'il faut injecter 0 dans le cas contraire?
 
     if ((int16_t)bridgeData.regMemoryMap[7] != pres_ERRORVAL) {
       bridgeData.presAtmospExt = bridgeData.regMemoryMap[7] / 10.0;  //On veut en hPa
+      //Yh 26 avr 2024: Oups!  manque la calibration:
       pressureExt    = bridgeData.presAtmospExt;     // External pressure (hPa)
       pressureExtStats.add(pressureExt);
       #if CALIBRATE
-          DEBUG_PRINT("\pressureExt: "); DEBUG_PRINT(pressureExt); DEBUG_PRINTLN("%");
+          DEBUG_PRINTF("\tpressureExt: "); DEBUG_PRINT(bridgeData.presAtmospExt); DEBUG_PRINTFLN(" hPa");
       #endif
     }  
     // Question: est-ce qu'il faut injecter 0 dans le cas contraire?
@@ -689,17 +694,23 @@ void readDFRWindSensor()
     // Pression: en cas d'erreur, la valeur recue sera 0
     float tempLum = bridgeData.regMemoryMap[8] / 3800.0;
     bridgeData.luminoAmbExt = pow(10,tempLum);
-    solar = bridgeData.luminoAmbExt;      // Luminosite (lux)
+    //Yh 26 avr 2024: Oups!  manque la calibration:
+    solar = veml_CF * bridgeData.luminoAmbExt + veml_Offset;
+    if (solar<0) solar = 0;  // Protection en cas de traitement de mauvaise lecture...
+
+    solarStats.add(solar);// // Add acquisition
+
+    #if CALIBRATE
+          DEBUG_PRINTF("\tluminoAmbExt: "); DEBUG_PRINT(bridgeData.luminoAmbExt); DEBUG_PRINTFLN(" lux");
+    #endif
 
     windDirection = bridgeData.angleVentFloat;
     windDirectionSector = bridgeData.directionVentInt;
     windSpeed = bridgeData.vitesseVentFloat;
 
-
     //Yh 18Déc2023: TODO
     //Traitement nécessaire si la temperatureHN est trop différente de la température du BME280 EXT (si disponible) ET que la hauteurNeige est disponible (pas 0 ou négatif)
     //Pour l'instant on y va directement:
-
 
     if (bridgeData.hauteurNeige < 4000) {  //Limite de la lecture: 4000mm = 4m sinon pas valide
       hauteurNeige = bridgeData.hauteurNeige;
@@ -710,12 +721,6 @@ void readDFRWindSensor()
     }
 
     hautNeige.add(hauteurNeige);
-
-    char smallMsg[128]={0};  //Temps buffer
-    sprintf(smallMsg,"%x %x %x %x %x %x %x %x %x",bridgeData.regMemoryMap[0],bridgeData.regMemoryMap[1],bridgeData.regMemoryMap[2],bridgeData.regMemoryMap[3],bridgeData.regMemoryMap[4],bridgeData.regMemoryMap[5],bridgeData.regMemoryMap[6],bridgeData.regMemoryMap[7],bridgeData.regMemoryMap[8]);
-
-    DEBUG_PRINT(F("\t*RAW* readings: ")); DEBUG_PRINTLN(smallMsg);
-
     
   } else {
     windDirection = 0.0;
@@ -758,11 +763,15 @@ void readDFRWindSensor()
   vStats.add(v);
 
   // Print debug info
-  DEBUG_PRINT(F("\tWind Speed: ")); DEBUG_PRINTLN(windSpeed);
-  DEBUG_PRINT(F("\tWind Direction: ")); DEBUG_PRINTLN(windDirection);
-  DEBUG_PRINT(F("\tWind Dir. Sector: ")); DEBUG_PRINTLN(windDirectionSector);
-  DEBUG_PRINT(F("\thauteurNeige: ")); DEBUG_PRINTLN(hauteurNeige);
-  DEBUG_PRINT(F("\tTemp. hauteurNeige: ")); DEBUG_PRINTLN(temperatureHN);
+  DEBUG_PRINTF("\tWind Speed: "); DEBUG_PRINTLN(windSpeed);
+  DEBUG_PRINTF("\tWind Direction: "); DEBUG_PRINTLN(windDirection);
+  DEBUG_PRINTF("\tWind Dir. Sector: "); DEBUG_PRINTLN(windDirectionSector);
+  DEBUG_PRINTF("\thauteurNeige: "); DEBUG_PRINTLN(hauteurNeige);
+  DEBUG_PRINTF("\tTemp. hauteurNeige: "); DEBUG_PRINTLN(temperatureHN);
+  DEBUG_PRINTF("\tTemperatureExt: "); DEBUG_PRINTLN(temperatureExt);
+  DEBUG_PRINTF("\tHumidityExt: "); DEBUG_PRINTLN(humidityExt);
+  DEBUG_PRINTF("\tpressureExt: "); DEBUG_PRINTLN(pressureExt);
+  DEBUG_PRINTF("\tluminoAmbExt: "); DEBUG_PRINTLN(solar);
 
 
     // Stop the loop timer

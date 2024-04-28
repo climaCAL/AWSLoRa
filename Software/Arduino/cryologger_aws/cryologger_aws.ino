@@ -55,7 +55,7 @@
 // Define unique identifier
 // ----------------------------------------------------------------------------
 #define CRYOLOGGER_ID "CAL"
-#define __VERSION "4.0.1" //Yh as of 25 avril 2024
+#define __VERSION "4.0.3" //Yh as of 25 avril 2024
 
 // ----------------------------------------------------------------------------
 // Data logging
@@ -68,7 +68,7 @@
 enum BME_PERIPH_ID {BMEINT=0,BMEEXT};
 #define BME280_EXT BME280_ADDRESS            //defined in Adafruit Library = 0x77 - Used for the outside sensor.
 #define BME280_INT BME280_ADDRESS_ALTERNATE  //defined in Adafruit Library = 0x76 - Used for the inside sensor.
-#define WIND_SENSOR_SLAVE_ADDR 0x66  //WindSensor module I2C address declaration
+#define BRIDGE_SENSOR_SLAVE_ADDR 0x66  //WindSensor module I2C address declaration
 //#define vemlI2cAddr 0x10  // According to datasheet page 6 (https://www.vishay.com/docs/84286/veml7700.pdf)
 
 // ----------------------------------------------------------------------------
@@ -77,11 +77,13 @@ enum BME_PERIPH_ID {BMEINT=0,BMEEXT};
 #define DEBUG           true   // Output debug messages to Serial Monitor
 #define DEBUG_GNSS      false  // Output GNSS debug information
 #define CALIBRATE       false  // Enable sensor calibration code
-#define DEBUG_LORA      false   // Output LoRa messages to SM 
+#define DEBUG_LORA      false  // Output LoRa messages to SM 
 
 #if DEBUG
 #define DEBUG_PRINT(x)            SERIAL_PORT.print(x)
+#define DEBUG_PRINTF(x)           SERIAL_PORT.print(F(x))
 #define DEBUG_PRINTLN(x)          SERIAL_PORT.println(x)
+#define DEBUG_PRINTFLN(x)         SERIAL_PORT.println(F(x))
 #define DEBUG_PRINT_HEX(x)        SERIAL_PORT.print(x, HEX)
 #define DEBUG_PRINTLN_HEX(x)      SERIAL_PORT.println(x, HEX)
 #define DEBUG_PRINT_DEC(x, y)     SERIAL_PORT.print(x, y)
@@ -299,7 +301,9 @@ struct sensorsDataStruct{
   float luminoAmbExt = 0.0;              //V0.7
 };
 
-const uint8_t ventRegMemMapSize = regMemoryMapSize*2;  //9*2 bytes (requis pour la req de lecture I2C)
+const uint8_t dataRegMemMapSize = regMemoryMapSize*2;  //9*2 bytes (requis pour la req de lecture I2C)
+
+const uint16_t bridgeSettleDelay = 15000;  // 10 secondes! oui... pas encore optimisé - Yh - 26 avril 2024
 
 // Union to store LoRa message
 const byte localAddress = 0x01;     // LoRa address of this device
