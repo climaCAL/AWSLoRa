@@ -631,11 +631,10 @@ void readDFRWindSensor()
   if (len != 0) {
 
     if (Wire.available() > 0) {
-//      if (!(len % 2))
-//        len = len - 1; //nombre pair seulement
+
       DEBUG_PRINTF("I2C received len: "); DEBUG_PRINTLN(len);
 
-      for (int i = 0; i < len/2; i++) {   //modif par Yh le 18déc2023 pour s'ajuster aux nb de bytes recus, avant était i<3
+      for (int i = 0; i < len/2; i++) {   //retrouver les 16-bits data à partir des bytes reçus du i2c
         uint8_t LSB = Wire.read();
         uint8_t MSB = Wire.read();
         bridgeData.regMemoryMap[i] = (MSB<<8)+LSB;
@@ -646,16 +645,46 @@ void readDFRWindSensor()
     sprintf(smallMsg,"%x %x %x %x %x %x %x %x %x",bridgeData.regMemoryMap[0],bridgeData.regMemoryMap[1],bridgeData.regMemoryMap[2],bridgeData.regMemoryMap[3],bridgeData.regMemoryMap[4],bridgeData.regMemoryMap[5],bridgeData.regMemoryMap[6],bridgeData.regMemoryMap[7],bridgeData.regMemoryMap[8]);
     DEBUG_PRINTF("\t*RAW* readings: "); DEBUG_PRINTLN(smallMsg);
 
-    bridgeData.angleVentFloat = bridgeData.regMemoryMap[0] / 10.0;
-    bridgeData.directionVentInt = bridgeData.regMemoryMap[1];
-    bridgeData.vitesseVentFloat = bridgeData.regMemoryMap[2] / 10.0;
-    bridgeData.hauteurNeige = bridgeData.regMemoryMap[3];
-    bridgeData.temperatureHN = bridgeData.regMemoryMap[4];
+    //--- Grande section de la récupération des valeurs et validation des codes d'erreurs --------------------------
 
-    //Récupération des valeurs et validation des codes d'erreurs:
-    if ((int16_t)bridgeData.regMemoryMap[5] != temp_ERRORVAL) {
-      bridgeData.temperatureExt = bridgeData.regMemoryMap[5] / 100.0;
+    //Traitement direction des vents - angle - Application du décodage:
+    bridgeData.angleVentFloat = bridgeData.regMemoryMap[angleVentRegOffset] / 10.0;
+    windDirection = bridgeData.angleVentFloat;
+
+    //Traitement direction des vents - secteur
+    bridgeData.directionVentInt = bridgeData.regMemoryMap[dirVentRegOffset];
+    windDirectionSector = bridgeData.directionVentInt;
+
+    //Traitement vitesse des vents - Application du décodage:
+    bridgeData.vitesseVentFloat = bridgeData.regMemoryMap[vitVentRegOffset] / 10.0;
+    windSpeed = bridgeData.vitesseVentFloat;
+
+    //Traitement hauteur de neige et température capteur HN:
+    bridgeData.hauteurNeige = bridgeData.regMemoryMap[HNeigeVentRegOffset];
+    bridgeData.temperatureHN = bridgeData.regMemoryMap[tempHNRegOffset];
+    //Yh 18Déc2023: TODO
+    //Traitement nécessaire si la temperatureHN est trop différente de la température du BME280 EXT (si disponible) ET que la hauteurNeige est disponible (pas 0 ou négatif)
+    //Pour l'instant on y va directement:
+
+    if (bridgeData.hauteurNeige < 4000) {  //Limite de la lecture: 4000mm = 4m sinon pas valide pcq pas fiable
+      hauteurNeige = bridgeData.hauteurNeige;
+      temperatureHN = bridgeData.temperatureHN;
+      hautNeige.add(hauteurNeige);
+    } else {
+      hauteurNeige = 0;
+      temperatureHN = 0;
+    }
+    
+    //Traitement data Stevenson - température (BME280):
+    if ((int16_t)bridgeData.regMemoryMap[tempExtRegOffset] != temp_ERRORVAL) {
+      //Application du décodage:
+      bridgeData.temperatureExt = bridgeData.regMemoryMap[tempExtRegOffset] / 100.0;
+
+      //Application de la correction selon étalonnage
       bridgeData.temperatureExt  = tempBmeEXT_CF * bridgeData.temperatureExt + tempBmeEXT_Offset;
+
+      // Protection en cas de mauvaise valeur après étalonnage?  n'a pas (encore) au 30 avril 2024 Yh
+
       temperatureExt = bridgeData.temperatureExt;  // External temperature (°C)
       temperatureExtStats.add(temperatureExt );
       #if CALIBRATE
@@ -664,64 +693,78 @@ void readDFRWindSensor()
     }
     // Question: est-ce qu'il faut injecter 0 dans le cas contraire?
 
-    if ((int16_t)bridgeData.regMemoryMap[6] != hum_ERRORVAL) {
-      bridgeData.humiditeExt = bridgeData.regMemoryMap[6] / 100.0;
+    //Traitement data Stevenson - humidité (BME280):
+    if ((int16_t)bridgeData.regMemoryMap[humExtRegOffset] != hum_ERRORVAL) {
+      //Application du décodage:
+      bridgeData.humiditeExt = bridgeData.regMemoryMap[humExtRegOffset] / 100.0;
+
+      //Application de la correction selon étalonnage
       float humExt = humBmeEXT_CF * bridgeData.humiditeExt + humBmeEXT_Offset;
+
+      // Protection en cas de mauvaise valeur après étalonnage
       if (humExt >= 100) {
-          humidityExt = 100;
-        } else {
-          humidityExt = humExt;
-        }
-      humidityExt    = bridgeData.humiditeExt;     // External humidity (%)
+        humidityExt = 100.0;
+      } else {
+        humidityExt = humExt;
+      }
+
       humidityExtStats.add(humidityExt);
+
       #if CALIBRATE
           DEBUG_PRINTF("\tHumidityExt: "); DEBUG_PRINT(bridgeData.humiditeExt); DEBUG_PRINTFLN("%");
       #endif
     }
     // Question: est-ce qu'il faut injecter 0 dans le cas contraire?
 
-    if ((int16_t)bridgeData.regMemoryMap[7] != pres_ERRORVAL) {
-      bridgeData.presAtmospExt = bridgeData.regMemoryMap[7] / 10.0;  //On veut en hPa
-      //Yh 26 avr 2024: Oups!  manque la calibration:
-      pressureExt    = bridgeData.presAtmospExt;     // External pressure (hPa)
+    //Traitement data Stevenson - pression atmoshpérique (BME280):
+    if ((int16_t)bridgeData.regMemoryMap[presExtRegOffset] != pres_ERRORVAL) {
+
+      //Application du décodage:
+      bridgeData.presAtmospExt = bridgeData.regMemoryMap[presExtRegOffset] / 10.0;  //On veut en hPa
+
+      //Application de la correction selon étalonnage  
+      pressureExt = presBmeEXT_CF * bridgeData.presAtmospExt + presBmeEXT_Offset;
+
+      // Protection en cas de mauvaise valeur après étalonnage?  n'a pas (encore) au 30 avril 2024 Yh
+
       pressureExtStats.add(pressureExt);
+
       #if CALIBRATE
           DEBUG_PRINTF("\tpressureExt: "); DEBUG_PRINT(bridgeData.presAtmospExt); DEBUG_PRINTFLN(" hPa");
       #endif
     }  
     // Question: est-ce qu'il faut injecter 0 dans le cas contraire?
 
-    // Pression: en cas d'erreur, la valeur recue sera 0
-    float tempLum = bridgeData.regMemoryMap[8] / 3800.0;
-    bridgeData.luminoAmbExt = pow(10,tempLum);
-    //Yh 26 avr 2024: Oups!  manque la calibration:
-    solar = veml_CF * bridgeData.luminoAmbExt + veml_Offset;
-    if (solar<0) solar = 0;  // Protection en cas de traitement de mauvaise lecture...
+    //Traitement data Stevenson - luminosité (VEML7700):
+    // Lumino: en cas d'erreur, la valeur recue sera 0
+    if (((uint16_t)bridgeData.regMemoryMap[luminoRegOffset]) > 0) {
 
-    solarStats.add(solar);// // Add acquisition
+      //Application du décodage:
+      float tempLum = ((uint16_t)bridgeData.regMemoryMap[luminoRegOffset]) / facteurMultLumino;  
+      bridgeData.luminoAmbExt = pow(10,tempLum);
 
-    #if CALIBRATE
-          DEBUG_PRINTF("\tluminoAmbExt: "); DEBUG_PRINT(bridgeData.luminoAmbExt); DEBUG_PRINTFLN(" lux");
-    #endif
+      //Application de la correction selon étalonnage
+      solar = veml_CF * bridgeData.luminoAmbExt + veml_Offset;
 
-    windDirection = bridgeData.angleVentFloat;
-    windDirectionSector = bridgeData.directionVentInt;
-    windSpeed = bridgeData.vitesseVentFloat;
-
-    //Yh 18Déc2023: TODO
-    //Traitement nécessaire si la temperatureHN est trop différente de la température du BME280 EXT (si disponible) ET que la hauteurNeige est disponible (pas 0 ou négatif)
-    //Pour l'instant on y va directement:
-
-    if (bridgeData.hauteurNeige < 4000) {  //Limite de la lecture: 4000mm = 4m sinon pas valide
-      hauteurNeige = bridgeData.hauteurNeige;
-      temperatureHN = bridgeData.temperatureHN;
-    } else {
-      hauteurNeige = 0;
-      temperatureHN = 0;
+      // Protection en cas de mauvaise valeur après étalonnage
+      if (solar > 0 && solar < 188000) {  
+        solarStats.add(solar);   // Add acquisition        
+      } else solar = 0.0; 
     }
 
-    hautNeige.add(hauteurNeige);
-    
+    #if CALIBRATE
+        DEBUG_PRINTF("\tluminoAmbExt: "); DEBUG_PRINT(bridgeData.luminoAmbExt); DEBUG_PRINTFLN(" lux");
+    #endif
+
+    //Recupération de l'information d'état de lecture par le périphérique:
+    uint16_t stvsnErrCode = ((uint16_t)bridgeData.regMemoryMap[stvsnErrRegOffset]);
+    DEBUG_PRINTF("\tstvsnErrCode: ");
+    if (stvsnErrCode) DEBUG_PRINTF("*ATTN* ");
+    DEBUG_PRINTLN(stvsnErrCode);
+
+
+    //--- Grande section de la récupération des valeurs et validation des codes d'erreurs --------------------------
+
   } else {
     windDirection = 0.0;
     windDirectionSector = 0;
@@ -773,8 +816,7 @@ void readDFRWindSensor()
   DEBUG_PRINTF("\tpressureExt: "); DEBUG_PRINTLN(pressureExt);
   DEBUG_PRINTF("\tluminoAmbExt: "); DEBUG_PRINTLN(solar);
 
-
-    // Stop the loop timer
+  // Stop the loop timer
   timer.readDFRWS = millis() - loopStartTime;
 }
 

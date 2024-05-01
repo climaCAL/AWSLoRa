@@ -207,6 +207,9 @@ float tempBmeEXT_CF             = 1.00;    // Correction factor for exterior tem
 float tempBmeEXT_Offset         = 0.0;   // Offset for exterior temperature acquisition.
 float humBmeEXT_CF              = 1.0;     // Correction factor for exterior humidity acquisition.
 float humBmeEXT_Offset          = 0.0;      // Offset for exterior humidity acquisition.
+float presBmeEXT_CF             = 1.00;
+float presBmeEXT_Offset         = 0.0;
+
 
 //BME280 -- Interior sensor
 float tempImeINT_CF             = 1.0;     // Correction factor for interior temperature acquisition.
@@ -285,6 +288,17 @@ tmElements_t  tm;                         // Variable for converting time elemen
 // regMemoryMap[6] = humidite du BME280 dans le Stevenson
 // regMemoryMap[7] = pression du BME280 dans le Stevenson
 // regMemoryMap[8] = Luminosite du VEML7700 dans le Stevenson
+// Définition de l'utilisation des données du tableau regMemoryMap de sensorsDataStruct:
+ #define angleVentRegOffset   0
+ #define dirVentRegOffset     1
+ #define vitVentRegOffset     2
+ #define HNeigeVentRegOffset  3
+ #define tempHNRegOffset      4
+ #define tempExtRegOffset     5
+ #define humExtRegOffset      6
+ #define presExtRegOffset     7
+ #define luminoRegOffset      8
+ #define stvsnErrRegOffset    9
 
 const int regMemoryMapSize = 9;
 
@@ -315,6 +329,8 @@ const int16_t temp_ERRORVAL  = -25500;   //temperature
 const int16_t hum_ERRORVAL   = -25500;   //humidite
 const int16_t pres_ERRORVAL  = -2550;    //pression atmospherique
 const uint16_t lux_ERROVAL   = 0;        //Luminosité
+
+const float facteurMultLumino = 3800.0;  //Facteur d'échelonnage lors de la conversion à un 16bits (encodage) pour mettre dans le registre
 
 typedef union
 {
