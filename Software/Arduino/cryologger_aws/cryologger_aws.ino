@@ -55,12 +55,12 @@
 // Define unique identifier
 // ----------------------------------------------------------------------------
 #define CRYOLOGGER_ID "CAL"
-#define __VERSION "4.0.3" //Yh as of 25 avril 2024
+#define __VERSION "4.1.1" //Yh as of 2 mai 2024
 
 // ----------------------------------------------------------------------------
 // Data logging
 // ----------------------------------------------------------------------------
-#define LOGGING         true  // Log data to microSD
+#define LOGGING         false  // Log data to microSD
 
 // ----------------------------------------------------------------------------
 // Define modifed addresses
@@ -180,7 +180,7 @@ Statistic solarStats;           // Solar radiation
 Statistic windSpeedStats;       // Wind speed
 Statistic uStats;               // Wind east-west wind vector component (u)
 Statistic vStats;               // Wind north-south wind vector component (v)
-Statistic hautNeige;            // Suivi hauteur de neige
+Statistic hauteurNeige;         // Suivi hauteur de neige
 
 // ----------------------------------------------------------------------------
 // User defined global variable declarations
@@ -218,8 +218,8 @@ float humImeINT_CF              = 1.0;      // Correction factor for interior hu
 float humBmeINT_Offset          = 0.0;      // Offset for interior humidity acquisition.
 
 //VEML7700
-float veml_CF                   = 15.172;   // Correction factor for light intensity acquisition.
-float veml_Offset               = -998;     // Offset for light intensity acquisition.
+float veml_CF                   = 1.0; // was 2/5/24 Yh: 15.172;   // Correction factor for light intensity acquisition.
+float veml_Offset               = 0.0; // was 2/5/24 Yh: -998;     // Offset for light intensity acquisition.
 
 // ----------------------------------------------------------------------------
 // Global variable declarations
@@ -264,8 +264,8 @@ float         windDirection     = 0.0;    // Wind direction (°)
 float         windGustSpeed     = 0.0;    // Wind gust speed  (m/s)
 float         windGustDirection = 0.0;    // Wind gust direction (°)
 int           windDirectionSector = 0.0;  // Wind direction indicator (ref to DFRWindSpeed() for details)
-float         hauteurNeige         = 0.0;    //Mesure de la hauteur de neige, en mm
-float         temperatureHN     =0.0;     //Temperature au moment de la mesure de la hauteur de neige (en C, 1C pres)
+float         hNeige            = 0.0;    //Mesure de la hauteur de neige, en mm
+float         temperatureHN     = 0.0;    //Temperature au moment de la mesure de la hauteur de neige (en C, 1C pres)
 float         voltage           = 0.0;    // Battery voltage (V)
 float         latitude          = 0.0;    // GNSS latitude (DD)
 float         longitude         = 0.0;    // GNSS longitude (DD)
@@ -292,7 +292,7 @@ tmElements_t  tm;                         // Variable for converting time elemen
  #define angleVentRegOffset   0
  #define dirVentRegOffset     1
  #define vitVentRegOffset     2
- #define HNeigeVentRegOffset  3
+ #define HNeigeRegOffset  3
  #define tempHNRegOffset      4
  #define tempExtRegOffset     5
  #define humExtRegOffset      6
@@ -319,6 +319,8 @@ const uint8_t dataRegMemMapSize = regMemoryMapSize*2;  //9*2 bytes (requis pour 
 
 const uint16_t bridgeSettleDelay = 15000;  // 10 secondes! oui... pas encore optimisé - Yh - 26 avril 2024
 
+const uint16_t valeurLimiteHauteurNeige = 4000; // Max acceptable pour la valeur de mesure hauteur de neige
+
 // Union to store LoRa message
 const byte localAddress = 0x01;     // LoRa address of this device
 const byte destination = 0xF1;      // LoRa destination to send to (gateway, repeater)
@@ -329,6 +331,7 @@ const int16_t temp_ERRORVAL  = -25500;   //temperature
 const int16_t hum_ERRORVAL   = -25500;   //humidite
 const int16_t pres_ERRORVAL  = -2550;    //pression atmospherique
 const uint16_t lux_ERROVAL   = 0;        //Luminosité
+const uint16_t HN_ERRORVAL   = 0xFFFF;   //Hauteur de neige
 
 const float facteurMultLumino = 3800.0;  //Facteur d'échelonnage lors de la conversion à un 16bits (encodage) pour mettre dans le registre
 

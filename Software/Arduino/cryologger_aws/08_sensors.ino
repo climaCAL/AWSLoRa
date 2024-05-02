@@ -660,20 +660,36 @@ void readDFRWindSensor()
     windSpeed = bridgeData.vitesseVentFloat;
 
     //Traitement hauteur de neige et température capteur HN:
-    bridgeData.hauteurNeige = bridgeData.regMemoryMap[HNeigeVentRegOffset];
-    bridgeData.temperatureHN = bridgeData.regMemoryMap[tempHNRegOffset];
-    //Yh 18Déc2023: TODO
-    //Traitement nécessaire si la temperatureHN est trop différente de la température du BME280 EXT (si disponible) ET que la hauteurNeige est disponible (pas 0 ou négatif)
-    //Pour l'instant on y va directement:
-
-    if (bridgeData.hauteurNeige < 4000) {  //Limite de la lecture: 4000mm = 4m sinon pas valide pcq pas fiable
-      hauteurNeige = bridgeData.hauteurNeige;
-      temperatureHN = bridgeData.temperatureHN;
-      hautNeige.add(hauteurNeige);
+    if ((bridgeData.regMemoryMap[HNeigeRegOffset]) == HN_ERRORVAL) {
+      DEBUG_PRINTFLN("\tInvalid data hauteurNeige");
+      hNeige = 0.0;
+      temperatureHN = 0.0;
     } else {
-      hauteurNeige = 0;
-      temperatureHN = 0;
+      bridgeData.hauteurNeige = (float)bridgeData.regMemoryMap[HNeigeRegOffset];
+      bridgeData.temperatureHN = (float)bridgeData.regMemoryMap[tempHNRegOffset];
+      
+      #if CALIBRATE
+        DEBUG_PRINTF("\thauteurNeige Raw: "); DEBUG_PRINT(bridgeData.hauteurNeige); DEBUG_PRINTFLN(" mm");
+      #endif
+
+      //Yh 18Déc2023: TODO
+      //Traitement nécessaire si la temperatureHN est trop différente de la température du BME280 EXT (si disponible) ET que la hauteurNeige est disponible (pas 0 ou négatif)
+      //Pour l'instant on y va directement:
+
+      if (bridgeData.hauteurNeige < valeurLimiteHauteurNeige) {  //Limite de la lecture: 4000mm = 4m sinon pas valide pcq pas fiable
+        hNeige = bridgeData.hauteurNeige;
+        temperatureHN = bridgeData.temperatureHN;
+        hauteurNeige.add(hNeige);
+      } else {
+        hNeige = 0.0;
+        temperatureHN = 0.0;
+      }
+
+      #if CALIBRATE
+        DEBUG_PRINTF("\thNeige: "); DEBUG_PRINT(hNeige); DEBUG_PRINTFLN(" mm");
+      #endif
     }
+    
     
     //Traitement data Stevenson - température (BME280):
     if ((int16_t)bridgeData.regMemoryMap[tempExtRegOffset] != temp_ERRORVAL) {
@@ -737,10 +753,11 @@ void readDFRWindSensor()
 
     //Traitement data Stevenson - luminosité (VEML7700):
     // Lumino: en cas d'erreur, la valeur recue sera 0
+    float tempLum = 0.0;
     if (((uint16_t)bridgeData.regMemoryMap[luminoRegOffset]) > 0) {
 
       //Application du décodage:
-      float tempLum = ((uint16_t)bridgeData.regMemoryMap[luminoRegOffset]) / facteurMultLumino;  
+      tempLum = ((uint16_t)bridgeData.regMemoryMap[luminoRegOffset]) / facteurMultLumino;
       bridgeData.luminoAmbExt = pow(10,tempLum);
 
       //Application de la correction selon étalonnage
@@ -752,8 +769,17 @@ void readDFRWindSensor()
       } else solar = 0.0; 
     }
 
+// Ex en date du 2 mai 2024: >	luminosite: raw=5993 tempLum=1.58 luminoAmbExt=37.77 solar=0.00 solarStats=15794.52
     #if CALIBRATE
-        DEBUG_PRINTF("\tluminoAmbExt: "); DEBUG_PRINT(bridgeData.luminoAmbExt); DEBUG_PRINTFLN(" lux");
+        DEBUG_PRINTF(">\tluminosite: raw="); DEBUG_PRINT(((uint16_t)bridgeData.regMemoryMap[luminoRegOffset]));
+        DEBUG_PRINTF(" tempLum="); DEBUG_PRINT(tempLum);
+        DEBUG_PRINTF(" luminoAmbExt="); DEBUG_PRINT(bridgeData.luminoAmbExt);
+        DEBUG_PRINTF(" solar="); DEBUG_PRINT(solar);
+        DEBUG_PRINTF(" solarStats="); DEBUG_PRINT(solarStats.average());
+        DEBUG_PRINTF(" Re-encodage 3800*log10(solarStats.avg)=");
+        uint16_t test = (uint16_t)(log10(solarStats.average())*facteurMultLumino);
+        DEBUG_PRINT(test);
+        DEBUG_PRINTFLN(" ");
     #endif
 
     //Recupération de l'information d'état de lecture par le périphérique:
@@ -809,7 +835,7 @@ void readDFRWindSensor()
   DEBUG_PRINTF("\tWind Speed: "); DEBUG_PRINTLN(windSpeed);
   DEBUG_PRINTF("\tWind Direction: "); DEBUG_PRINTLN(windDirection);
   DEBUG_PRINTF("\tWind Dir. Sector: "); DEBUG_PRINTLN(windDirectionSector);
-  DEBUG_PRINTF("\thauteurNeige: "); DEBUG_PRINTLN(hauteurNeige);
+  DEBUG_PRINTF("\thauteurNeige: "); DEBUG_PRINTLN(hNeige);
   DEBUG_PRINTF("\tTemp. hauteurNeige: "); DEBUG_PRINTLN(temperatureHN);
   DEBUG_PRINTF("\tTemperatureExt: "); DEBUG_PRINTLN(temperatureExt);
   DEBUG_PRINTF("\tHumidityExt: "); DEBUG_PRINTLN(humidityExt);
