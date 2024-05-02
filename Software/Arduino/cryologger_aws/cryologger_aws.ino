@@ -55,7 +55,7 @@
 // Define unique identifier
 // ----------------------------------------------------------------------------
 #define CRYOLOGGER_ID "CAL"
-#define __VERSION "4.1.1" //Yh as of 2 mai 2024
+#define __VERSION "4.1.2" //Yh as of 2 mai 2024
 
 // ----------------------------------------------------------------------------
 // Data logging

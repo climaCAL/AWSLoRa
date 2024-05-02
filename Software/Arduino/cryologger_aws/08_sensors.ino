@@ -753,34 +753,35 @@ void readDFRWindSensor()
 
     //Traitement data Stevenson - luminosité (VEML7700):
     // Lumino: en cas d'erreur, la valeur recue sera 0
-    float tempLum = 0.0;
-    if (((uint16_t)bridgeData.regMemoryMap[luminoRegOffset]) > 0) {
 
-      //Application du décodage:
-      tempLum = ((uint16_t)bridgeData.regMemoryMap[luminoRegOffset]) / facteurMultLumino;
+    //Application du décodage:
+    if (bridgeData.regMemoryMap[luminoRegOffset] > 0) {
+      float tempLum = bridgeData.regMemoryMap[luminoRegOffset] / facteurMultLumino;
       bridgeData.luminoAmbExt = pow(10,tempLum);
+    } else
+      bridgeData.luminoAmbExt = 0.0;
 
-      //Application de la correction selon étalonnage
-      solar = veml_CF * bridgeData.luminoAmbExt + veml_Offset;
+    //Application de la correction selon étalonnage
+    solar = veml_CF * bridgeData.luminoAmbExt + veml_Offset;
 
-      // Protection en cas de mauvaise valeur après étalonnage
-      if (solar > 0 && solar < 188000) {  
-        solarStats.add(solar);   // Add acquisition        
-      } else solar = 0.0; 
-    }
+    // Protection en cas de mauvaise valeur après étalonnage
+    if (solar > 0 && solar < 188000) {  
+      solarStats.add(solar);   // Add acquisition        
+    } else solar = 0.0; 
 
-// Ex en date du 2 mai 2024: >	luminosite: raw=5993 tempLum=1.58 luminoAmbExt=37.77 solar=0.00 solarStats=15794.52
+    // Ex en date du 2 mai 2024: 
     #if CALIBRATE
         DEBUG_PRINTF(">\tluminosite: raw="); DEBUG_PRINT(((uint16_t)bridgeData.regMemoryMap[luminoRegOffset]));
-        DEBUG_PRINTF(" tempLum="); DEBUG_PRINT(tempLum);
+//        DEBUG_PRINTF(" tempLum="); DEBUG_PRINT(tempLum);
         DEBUG_PRINTF(" luminoAmbExt="); DEBUG_PRINT(bridgeData.luminoAmbExt);
         DEBUG_PRINTF(" solar="); DEBUG_PRINT(solar);
         DEBUG_PRINTF(" solarStats="); DEBUG_PRINT(solarStats.average());
-        DEBUG_PRINTF(" Re-encodage 3800*log10(solarStats.avg)=");
-        uint16_t test = (uint16_t)(log10(solarStats.average())*facteurMultLumino);
-        DEBUG_PRINT(test);
+//        DEBUG_PRINTF(" Re-encodage 3800*log10(solarStats.avg)=");
+//        uint16_t test = (uint16_t)(log10(solarStats.average())*facteurMultLumino);
+//        DEBUG_PRINT(test);
         DEBUG_PRINTFLN(" ");
     #endif
+
 
     //Recupération de l'information d'état de lecture par le périphérique:
     uint16_t stvsnErrCode = ((uint16_t)bridgeData.regMemoryMap[stvsnErrRegOffset]);
