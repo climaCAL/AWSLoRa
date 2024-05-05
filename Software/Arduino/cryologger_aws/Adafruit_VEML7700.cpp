@@ -36,51 +36,81 @@ Adafruit_VEML7700::Adafruit_VEML7700(void) {}
 
 Adafruit_VEML7700::~Adafruit_VEML7700(void) {
   if (i2c_dev) {
+//Yh 21dec2023 debug:    Serial.print(F("d i2c"));
     delete i2c_dev;
+//Yh 21dec2023 debug:    Serial.println(F(" ...done"));
   }
   
   if (ALS_Config) {
+//Yh 21dec2023 debug:    Serial.print(F("d cfg"));
     delete ALS_Config;
+//Yh 21dec2023 debug:    Serial.println(F(" ...done"));
   }
   if (ALS_Data) {
+//Yh 21dec2023 debug:    Serial.print(F("d Adta"));
     delete ALS_Data;
+//Yh 21dec2023 debug:    Serial.println(F(" ...done"));
   }
   if (White_Data) {
+//Yh 21dec2023 debug:    Serial.print(F("d wdta"));
     delete White_Data;
+//Yh 21dec2023 debug:    Serial.println(F(" ...done"));
   }
   if (ALS_HighThreshold) {
+//Yh 21dec2023 debug:    Serial.print(F("d hThr"));
     delete ALS_HighThreshold;
+//Yh 21dec2023 debug:    Serial.println(F(" ...done"));
   }
   if (ALS_LowThreshold) {
+//Yh 21dec2023 debug:    Serial.print(F("d lThr"));
     delete ALS_LowThreshold;
+//Yh 21dec2023 debug:    Serial.println(F(" ...done"));
   }
   if (Power_Saving) {
+//Yh 21dec2023 debug:    Serial.print(F("d Psvr"));
     delete Power_Saving;
+//Yh 21dec2023 debug:    Serial.println(F(" ...done"));
   }
   if (Interrupt_Status) {
+//Yh 21dec2023 debug:    Serial.print(F("d Idta"));
     delete Interrupt_Status;
+//Yh 21dec2023 debug:    Serial.println(F(" ...done"));
   }
   
   if (ALS_Shutdown) {
+//Yh 21dec2023 debug:    Serial.print(F("d shtd"));
     delete ALS_Shutdown;
+//Yh 21dec2023 debug:    Serial.println(F(" ...done"));
   }
   if (ALS_Interrupt_Enable) {
+//Yh 21dec2023 debug:    Serial.print(F("d Iena"));
     delete ALS_Interrupt_Enable;
+//Yh 21dec2023 debug:    Serial.println(F(" ...done"));
   }
     if (ALS_Persistence) {
+//Yh 21dec2023 debug:    Serial.print(F("d APer"));
     delete ALS_Persistence;
+//Yh 21dec2023 debug:    Serial.println(F(" ...done"));
   }
   if (ALS_Integration_Time) {
+//Yh 21dec2023 debug:    Serial.print(F("d Itim"));
     delete ALS_Integration_Time;
+//Yh 21dec2023 debug:    Serial.println(F(" ...done"));
   }
   if (ALS_Gain) {
+//Yh 21dec2023 debug:    Serial.print(F("d gain"));
     delete ALS_Gain;
+//Yh 21dec2023 debug:    Serial.println(F(" ...done"));
   }
   if (PowerSave_Enable) {
+//Yh 21dec2023 debug:    Serial.print(F("d PSEn"));
     delete PowerSave_Enable;
+//Yh 21dec2023 debug:    Serial.println(F(" ...done"));
   }
   if (PowerSave_Mode) {
+//Yh 21dec2023 debug:    Serial.print(F("d PSMod"));
     delete PowerSave_Mode;
+//Yh 21dec2023 debug:    Serial.println(F(" ...done"));
   }
  }
 

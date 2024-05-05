@@ -92,8 +92,8 @@ void createLogFile()
   updateFileCreate(&logFile);
 
   // Write header to file
-  logFile.println("sample,datetime,voltage,temperature_int,humidity_int,pressure_int,temperature_ext,"
-                  "humidity_ext,pitch,roll,wind_speed,wind_direction,solar,latitude,longitude,satellites,hdop,"
+  logFile.println("sample,datetime,voltage,temperature_int,humidity_int,pressure_ext,temperature_ext,"
+                  "humidity_ext,pitch,roll,wind_speed,wind_direction,solar,latitude,longitude,satellites,hautNeige,temperatureHN"
                   "online_microSd,online_Bme280_I,online_Bme280_E,online_Lsm303,timer_readRtc,timer_readBattery,timer_configMicroSd,"
                   "timer_readGnss,timer_bme280,timer_lsm303,transmit_status,rtc_drift,free_ram,"
                   "sampleInterval,averageInterval,transmitInterval,retransmitLimit,gnssTimeout");
@@ -161,7 +161,7 @@ void logData()
       logFile.print(voltage);             logFile.print(",");
       logFile.print(temperatureInt);      logFile.print(",");
       logFile.print(humidityInt);         logFile.print(",");
-      logFile.print(pressureInt);         logFile.print(",");
+      logFile.print(pressureExt);         logFile.print(",");
       logFile.print(temperatureExt);      logFile.print(",");
       logFile.print(humidityExt);         logFile.print(",");
       logFile.print(pitch);               logFile.print(",");
@@ -172,7 +172,10 @@ void logData()
       logFile.print(latitude, 6);         logFile.print(",");
       logFile.print(longitude, 6);        logFile.print(",");
       logFile.print(satellites);          logFile.print(",");
-      logFile.print(hdop);                logFile.print(",");
+      //Yh 18dec2023 (retiré): logFile.print(hdop);                logFile.print(",");
+      logFile.print(hauteurNeige);           logFile.print(",");
+      logFile.print(temperatureHN);       logFile.print(",");
+      
 
       // Online information
       logFile.print(online.microSd);      logFile.print(",");
@@ -225,7 +228,7 @@ void logData()
       DEBUG_PRINT(voltage);             DEBUG_PRINT(",");
       DEBUG_PRINT(temperatureInt);      DEBUG_PRINT(",");
       DEBUG_PRINT(humidityInt);         DEBUG_PRINT(",");
-      DEBUG_PRINT(pressureInt);         DEBUG_PRINT(",");
+      DEBUG_PRINT(pressureExt);         DEBUG_PRINT(",");
       DEBUG_PRINT(temperatureExt);      DEBUG_PRINT(",");
       DEBUG_PRINT(humidityExt);         DEBUG_PRINT(",");
       DEBUG_PRINT(pitch);               DEBUG_PRINT(",");
@@ -236,7 +239,9 @@ void logData()
       DEBUG_PRINT_DEC(latitude, 6);     DEBUG_PRINT(",");
       DEBUG_PRINT_DEC(longitude, 6);    DEBUG_PRINT(",");
       DEBUG_PRINT(satellites);          DEBUG_PRINT(",");
-      DEBUG_PRINT(hdop);                DEBUG_PRINT(",");
+      //Yh 18dec2023 (retiré):DEBUG_PRINT(hdop);                DEBUG_PRINT(",");
+      DEBUG_PRINT(hauteurNeige);           DEBUG_PRINT(",");
+      DEBUG_PRINT(temperatureHN);       DEBUG_PRINT(",");
 
       // Online information
       DEBUG_PRINT(online.microSd);      DEBUG_PRINT(",");

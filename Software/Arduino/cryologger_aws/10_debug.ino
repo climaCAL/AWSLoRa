@@ -61,13 +61,13 @@ void printTimers()
 void printMoSbd()
 {
   printLine();
-  DEBUG_PRINTLN("MO-SBD Message Data");
+  DEBUG_PRINTLN("LoRa Message Data");
   printLine();
 
   DEBUG_PRINT("unixtime:");         printTab(2);  DEBUG_PRINTLN(LoRaMessage.unixtime);
   DEBUG_PRINT("temperatureInt:");   printTab(2);  DEBUG_PRINTLN(LoRaMessage.temperatureInt);
   DEBUG_PRINT("humidityInt:");      printTab(2);  DEBUG_PRINTLN(LoRaMessage.humidityInt);
-  DEBUG_PRINT("pressureInt:");      printTab(2);  DEBUG_PRINTLN(LoRaMessage.pressureInt);
+  DEBUG_PRINT("pressureExt:");      printTab(2);  DEBUG_PRINTLN(LoRaMessage.pressureExt);
   DEBUG_PRINT("temperatureExt:");   printTab(2);  DEBUG_PRINTLN(LoRaMessage.temperatureExt);
   DEBUG_PRINT("humidityExt:");      printTab(2);  DEBUG_PRINTLN(LoRaMessage.humidityExt);
   DEBUG_PRINT("solar:");            printTab(3);  DEBUG_PRINTLN(LoRaMessage.solar);
@@ -80,7 +80,8 @@ void printMoSbd()
   DEBUG_PRINT("latitude:");         printTab(2);  DEBUG_PRINTLN(LoRaMessage.latitude);
   DEBUG_PRINT("longitude:");        printTab(2);  DEBUG_PRINTLN(LoRaMessage.longitude);
   DEBUG_PRINT("satellites:");       printTab(2);  DEBUG_PRINTLN(LoRaMessage.satellites);
-  DEBUG_PRINT("hdop:");             printTab(3);  DEBUG_PRINTLN(LoRaMessage.hdop);
+  //Yh 18dec2023 (retiré): DEBUG_PRINT("hdop:");             printTab(3);  DEBUG_PRINTLN(LoRaMessage.hdop);
+  DEBUG_PRINT("hauteurNeige:");     printTab(1);  DEBUG_PRINTLN(LoRaMessage.hauteurNeige);
   DEBUG_PRINT("voltage:");          printTab(2);  DEBUG_PRINTLN(LoRaMessage.voltage);
   DEBUG_PRINT("transmitDuration:"); printTab(1);  DEBUG_PRINTLN(LoRaMessage.transmitDuration);
   DEBUG_PRINT("transmitStatus:");   printTab(2);  DEBUG_PRINTLN(LoRaMessage.transmitStatus);
