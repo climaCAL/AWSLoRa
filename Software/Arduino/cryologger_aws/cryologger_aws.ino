@@ -360,7 +360,7 @@ typedef union
     uint8_t   satellites;         // # of satellites                (1 byte)
     uint16_t  hauteurNeige;          // mesure de la hauteur de neige (mm) (2 bytes)
     // Yh 18 déc 2023: Question: a-t-on besoin de la mesure de la temperature selon le capteur hauteur de neige??
-    uint16_t  voltage;            // Battery voltage (V)            (2 bytes)   * 100
+    uint16_t  voltage;            // Battery voltage (V)            (2 bytes)   * 100  //Yh 14 mai: potentiel de sauver 1 octet ici.
     uint16_t  transmitDuration;   // Previous transmission duration (2 bytes)
     uint8_t   transmitStatus;     // LoRa return code               (1 byte)
     uint16_t  iterationCounter;   // Message counter                (2 bytes)

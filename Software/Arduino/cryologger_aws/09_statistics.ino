@@ -52,6 +52,11 @@ void calculateStats()
   windGustSpeed = 0;
   windGustDirection = 0;
   windDirectionSector = 0;
+
+  // Write location data to union (will reuse previously stored data if readGNSS did not occur during this cycle)
+  LoRaMessage.latitude = latitude * 1000000;
+  LoRaMessage.longitude = longitude * 1000000;
+  LoRaMessage.satellites = satellites;
 }
 
 // Clear statistics objects
