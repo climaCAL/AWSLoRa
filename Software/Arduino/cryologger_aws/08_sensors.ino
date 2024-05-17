@@ -784,10 +784,11 @@ void readDFRWindSensor()
 
 
     //Recupération de l'information d'état de lecture par le périphérique:
-    uint16_t stvsnErrCode = ((uint16_t)bridgeData.regMemoryMap[stvsnErrRegOffset]);
+    uint16_t bridgeData.stvsnErrCode = ((uint16_t)bridgeData.regMemoryMap[stvsnErrRegOffset]);
+
     DEBUG_PRINTF("\tstvsnErrCode: ");
-    if (stvsnErrCode) DEBUG_PRINTF("*ATTN* ");
-    DEBUG_PRINTLN(stvsnErrCode);
+    if (bridgeData.stvsnErrCode) DEBUG_PRINTF("*ATTN* ");
+    DEBUG_PRINTLN(bridgeData.stvsnErrCode);
 
 
     //--- Grande section de la récupération des valeurs et validation des codes d'erreurs --------------------------

@@ -292,7 +292,7 @@ tmElements_t  tm;                         // Variable for converting time elemen
  #define angleVentRegOffset   0
  #define dirVentRegOffset     1
  #define vitVentRegOffset     2
- #define HNeigeRegOffset  3
+ #define HNeigeRegOffset      3
  #define tempHNRegOffset      4
  #define tempExtRegOffset     5
  #define humExtRegOffset      6
@@ -300,10 +300,10 @@ tmElements_t  tm;                         // Variable for converting time elemen
  #define luminoRegOffset      8
  #define stvsnErrRegOffset    9
 
-const int regMemoryMapSize = 9;
+const int regMemoryMapSize = 10;
 
 struct sensorsDataStruct{
-  uint16_t regMemoryMap[regMemoryMapSize] = {0,0,0,0,0,0,0,0,0};
+  uint16_t regMemoryMap[regMemoryMapSize] = {0,0,0,0,0,0,0,0,0,0};
   float angleVentFloat = 0.0;
   uint16_t directionVentInt = 0;
   float vitesseVentFloat = 0.0;
@@ -313,6 +313,7 @@ struct sensorsDataStruct{
   float humiditeExt = 0.0;               //V0.7
   float presAtmospExt = 0.0;             //V0.7
   float luminoAmbExt = 0.0;              //V0.7
+  uint16_t stvsnErr = 0;
 };
 
 const uint8_t dataRegMemMapSize = regMemoryMapSize*2;  //9*2 bytes (requis pour la req de lecture I2C)
