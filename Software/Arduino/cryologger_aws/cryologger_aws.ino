@@ -313,7 +313,7 @@ struct sensorsDataStruct{
   float humiditeExt = 0.0;               //V0.7
   float presAtmospExt = 0.0;             //V0.7
   float luminoAmbExt = 0.0;              //V0.7
-  uint16_t stvsnErr = 0;
+  uint16_t stvsnErrCode = 0;             //v0.8
 };
 
 const uint8_t dataRegMemMapSize = regMemoryMapSize*2;  //9*2 bytes (requis pour la req de lecture I2C)
