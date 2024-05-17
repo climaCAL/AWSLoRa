@@ -642,7 +642,7 @@ void readDFRWindSensor()
     }
 
     char smallMsg[128]={0};  //Temps buffer
-    sprintf(smallMsg,"%x %x %x %x %x %x %x %x %x",bridgeData.regMemoryMap[0],bridgeData.regMemoryMap[1],bridgeData.regMemoryMap[2],bridgeData.regMemoryMap[3],bridgeData.regMemoryMap[4],bridgeData.regMemoryMap[5],bridgeData.regMemoryMap[6],bridgeData.regMemoryMap[7],bridgeData.regMemoryMap[8]);
+    sprintf(smallMsg,"%x %x %x %x %x %x %x %x %x %x",bridgeData.regMemoryMap[0],bridgeData.regMemoryMap[1],bridgeData.regMemoryMap[2],bridgeData.regMemoryMap[3],bridgeData.regMemoryMap[4],bridgeData.regMemoryMap[5],bridgeData.regMemoryMap[6],bridgeData.regMemoryMap[7],bridgeData.regMemoryMap[8],bridgeData.regMemoryMap[9]);
     DEBUG_PRINTF("\t*RAW* readings: "); DEBUG_PRINTLN(smallMsg);
 
     //--- Grande section de la récupération des valeurs et validation des codes d'erreurs --------------------------
