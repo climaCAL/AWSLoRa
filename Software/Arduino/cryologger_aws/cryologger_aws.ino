@@ -218,8 +218,8 @@ float humImeINT_CF              = 1.0;      // Correction factor for interior hu
 float humBmeINT_Offset          = 0.0;      // Offset for interior humidity acquisition.
 
 //VEML7700
-float veml_CF                   = 1.0; // was 2/5/24 Yh: 15.172;   // Correction factor for light intensity acquisition.
-float veml_Offset               = 0.0; // was 2/5/24 Yh: -998;     // Offset for light intensity acquisition.
+float veml_CF                   = 22.045; // Correction factor for light intensity acquisition. Ref: ÉtalonnageVEML7700_H24.xlsx
+float veml_Offset               = -372.06; // was 2/5/24 Yh: -998;     // Offset for light intensity acquisition.
 
 // ----------------------------------------------------------------------------
 // Global variable declarations
