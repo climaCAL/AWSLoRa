@@ -813,11 +813,6 @@ void readDFRWindSensor()
     windGustDirection = windDirection;
   }
 
-  //Yh 17dec2023: inutile puisque la fct windVectors s'en occupe, donc mis en commentaires
-  // Write data to union (LoRa)
-  //LoRaMessage.windSpeed = windSpeed * 100;
-  //LoRaMessage.windDirection = windDirection;
-
   // Calculate wind speed and direction vectors
   // http://tornado.sfsu.edu/geosciences/classes/m430/Wind/WindDirection.html
   float windDirectionRadians = windDirection * DEG_TO_RAD;  // Convert wind direction from degrees to radians
